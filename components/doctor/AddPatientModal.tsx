@@ -68,16 +68,26 @@ export function AddPatientModal({ isOpen, onClose, onAddPatient, patients }: Add
         body: JSON.stringify({ patientId: patient.id }),
       })
 
+      const data = await response.json()
+
       if (!response.ok) {
-        const data = await response.json()
         throw new Error(data.error || "Failed to add patient")
       }
 
-      onAddPatient(patient)
-      toast({
-        title: "Patient Added",
-        description: `${patient.name} (HealthID: ${patient.healthBuddyID}) has been added to your list!`,
-      })
+      if (data.alreadyAdded) {
+        toast({
+          title: "Info",
+          description: `${patient.name} is already in your list.`,
+        })
+      } else {
+        // Use the patient data returned from the API or fall back to the original patient data
+        const addedPatient = data.patient || patient
+        onAddPatient(addedPatient)
+        toast({
+          title: "Patient Added",
+          description: `${addedPatient.name} (HealthID: ${addedPatient.healthBuddyID}) has been added to your list!`,
+        })
+      }
       onClose()
     } catch (error) {
       console.error("Error adding patient:", error)

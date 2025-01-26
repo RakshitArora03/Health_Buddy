@@ -40,10 +40,10 @@ export default function PatientsPage() {
 
   const fetchPatients = useCallback(async () => {
     try {
+      setIsLoading(true)
       const response = await fetch("/api/doctor/patients")
       if (!response.ok) throw new Error("Failed to fetch patients")
       const data = await response.json()
-      console.log("Fetched patients:", data)
       setPatients(data)
     } catch (error) {
       console.error("Error fetching patients:", error)
@@ -63,42 +63,8 @@ export default function PatientsPage() {
     }
   }, [session, fetchPatients])
 
-  const handleAddPatient = async (patient: Patient) => {
-    try {
-      const response = await fetch("/api/doctor/patients", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ patientId: patient.id }),
-      })
-
-      const data = await response.json()
-
-      if (!response.ok) {
-        throw new Error(data.error || "Failed to add patient")
-      }
-
-      if (data.alreadyAdded) {
-        toast({
-          title: "Info",
-          description: `${patient.name} is already in your list.`,
-        })
-      } else {
-        setPatients((prevPatients) => [...prevPatients, patient])
-        toast({
-          title: "Success",
-          description: `${patient.name} has been added to your list.`,
-        })
-      }
-    } catch (error) {
-      console.error("Error adding patient:", error)
-      toast({
-        title: "Error",
-        description: error instanceof Error ? error.message : "Failed to add patient",
-        variant: "destructive",
-      })
-    }
+  const handleAddPatient = (patient: Patient) => {
+    setPatients((prevPatients) => [...prevPatients, patient])
   }
 
   const handleDeletePatient = async (patient: Patient) => {

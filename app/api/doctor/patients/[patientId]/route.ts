@@ -4,10 +4,8 @@ import { getServerSession } from "next-auth/next";
 import { authOptions } from "../../../auth/[...nextauth]/route";
 import { ObjectId } from "mongodb";
 
-export async function DELETE(
-  request: NextRequest,
-  { params }: { params: { patientId: string } }
-) {
+export async function DELETE(request: NextRequest, props: { params: Promise<{ patientId: string }> }) {
+  const params = await props.params;
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.email) {
