@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { Home, User, Search, Clock, LogOut, Menu, X, UserPlus } from "lucide-react"
+import { Home, User, Search, Clock, LogOut, Menu, X, UserPlus, UserIcon as UserMd, FileText } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import {
   AlertDialog,
@@ -16,7 +16,6 @@ import {
 import Link from "next/link"
 import { usePathname, useRouter } from "next/navigation"
 import { signOut, useSession } from "next-auth/react"
-import Image from "next/image"
 
 export default function Navbar() {
   const [showLogoutDialog, setShowLogoutDialog] = useState<boolean>(false)
@@ -78,18 +77,16 @@ export default function Navbar() {
     <>
       <nav className="bg-gray-900 text-white">
         {/* Mobile menu button */}
-        <div className="md:hidden flex justify-end p-4">
+        <div className="md:hidden flex justify-between items-center p-4">
+          <h1 className="text-2xl font-bold">HEALTH BUDDY</h1>
           <Button variant="ghost" size="icon" onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}>
             {isMobileMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
           </Button>
         </div>
 
         {/* Desktop sidebar */}
-        <aside className="hidden md:block fixed h-full w-60 p-4 overflow-y-auto bg-gray-900">
-          <div className="flex flex-col items-center space-y-2 mb-8 pt-4">
-            <Image src="/assets/images/logo.png" alt="Health Buddy" width={40} height={40} />
-            <h1 className="text-2xl font-bold text-white">HEALTH BUDDY</h1>
-          </div>
+        <aside className="hidden md:block fixed h-full w-64 p-4 overflow-y-auto bg-gray-900">
+          <h1 className="text-2xl font-bold mb-8 pt-4">HEALTH BUDDY</h1>
           <nav className="space-y-4">
             <NavLink href="/patient/dashboard" icon={Home}>
               Home
@@ -97,11 +94,14 @@ export default function Navbar() {
             <NavLink href="/patient/profile" icon={User}>
               Profile
             </NavLink>
+            <NavLink href="/patient/doctors" icon={UserMd}>
+              Doctors
+            </NavLink>
             <NavLink href="/patient/analyzer" icon={Search}>
               Analyzer
             </NavLink>
-            <NavLink href="/patient/history" icon={Clock}>
-              History
+            <NavLink href="/patient/prescriptions" icon={FileText}>
+              Prescriptions
             </NavLink>
             <NavLink href="/patient/health-id-registration" icon={UserPlus} onClick={handleHealthIdRegistrationClick}>
               Health ID Registration
@@ -120,9 +120,11 @@ export default function Navbar() {
         {/* Mobile menu */}
         {isMobileMenuOpen && (
           <div className="md:hidden fixed inset-0 bg-gray-900 z-50">
-            <div className="flex flex-col items-center space-y-2 p-4">
-              <Image src="/assets/images/logo.png" alt="Health Buddy" width={40} height={40} />
+            <div className="flex justify-between items-center p-4">
               <h1 className="text-2xl font-bold">HEALTH BUDDY</h1>
+              <Button variant="ghost" size="icon" onClick={() => setIsMobileMenuOpen(false)}>
+                <X className="h-6 w-6" />
+              </Button>
             </div>
             <nav className="space-y-4 p-4">
               <NavLink href="/patient/dashboard" icon={Home}>
@@ -131,11 +133,14 @@ export default function Navbar() {
               <NavLink href="/patient/profile" icon={User}>
                 Profile
               </NavLink>
+              <NavLink href="/patient/doctors" icon={UserMd}>
+                Doctors
+              </NavLink>
               <NavLink href="/patient/analyzer" icon={Search}>
                 Analyzer
               </NavLink>
-              <NavLink href="/patient/history" icon={Clock}>
-                History
+              <NavLink href="/patient/prescriptions" icon={FileText}>
+                Prescriptions
               </NavLink>
               <NavLink href="/patient/health-id-registration" icon={UserPlus} onClick={handleHealthIdRegistrationClick}>
                 Health ID Registration

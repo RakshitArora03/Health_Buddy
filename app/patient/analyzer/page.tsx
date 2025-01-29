@@ -84,7 +84,7 @@ export default function Analyzer() {
 
   const handleSave = async () => {
     if (!session) {
-      router.push("/login")
+      router.push("/")
       return
     }
 
@@ -104,7 +104,7 @@ export default function Analyzer() {
 
       if (response.ok) {
         toast.success("Analysis saved successfully!")
-        router.push("/patient/history")
+        router.push("/patient/prescriptions")
       } else {
         toast.error("Failed to save analysis")
       }

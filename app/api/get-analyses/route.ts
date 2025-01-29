@@ -1,23 +1,29 @@
 import { NextResponse } from "next/server"
+import { getServerSession } from "next-auth/next"
+import { authOptions } from "../auth/[...nextauth]/route"
 import { connectToDatabase } from "@/lib/mongodb"
 
 export async function GET(request: Request) {
-  const { searchParams } = new URL(request.url)
-  const userId = searchParams.get("userId")
-
-  if (!userId) {
-    return NextResponse.json({ error: "User ID is required" }, { status: 400 })
-  }
-
   try {
+    // Get session for authentication
+    const session = await getServerSession(authOptions)
+    if (!session?.user?.email) {
+      return NextResponse.json({ error: "Not authenticated" }, { status: 401 })
+    }
+
+    // Connect to database
     const { db } = await connectToDatabase()
 
-    const analyses = await db.collection("analyses").find({ userId }).sort({ isPinned: -1, createdAt: -1 }).toArray()
+    // Fetch the analyzed prescriptions using email instead of _id
+    const analyses = await db
+      .collection("analyses")
+      .find({ userId: session.user.email }) // Corrected: Query using email
+      .sort({ createdAt: -1 })
+      .toArray()
 
     return NextResponse.json(analyses)
   } catch (error) {
-    console.error("Error fetching analyses:", error)
-    return NextResponse.json({ error: "Failed to fetch analyses" }, { status: 500 })
+    console.error("Error fetching analyzed prescriptions:", error)
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 })
   }
 }
-
