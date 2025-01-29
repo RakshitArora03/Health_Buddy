@@ -25,12 +25,25 @@ interface Patient {
   weight?: string
   phoneNumber?: string
   address?: string
+  healthId: string // Add this line
+}
+
+const calculateAge = (dateOfBirth: string): string => {
+  const today = new Date()
+  const birthDate = new Date(dateOfBirth)
+  let age = today.getFullYear() - birthDate.getFullYear()
+  const monthDifference = today.getMonth() - birthDate.getMonth()
+  if (monthDifference < 0 || (monthDifference === 0 && today.getDate() < birthDate.getDate())) {
+    age--
+  }
+  return age.toString()
 }
 
 export default function PatientDetailsPage() {
   const params = useParams()
   const [patient, setPatient] = useState<Patient | null>(null)
   const [activeTab, setActiveTab] = useState("info")
+  const [doctorName, setDoctorName] = useState("Dr. Unknown")
 
   useEffect(() => {
     // Fetch patient details
@@ -45,8 +58,21 @@ export default function PatientDetailsPage() {
       }
     }
 
+    const fetchDoctorName = async () => {
+      try {
+        const response = await fetch("/api/doctor/profile")
+        if (response.ok) {
+          const data = await response.json()
+          setDoctorName(data.name || "Dr. Unknown")
+        }
+      } catch (error) {
+        console.error("Error fetching doctor name:", error)
+      }
+    }
+
     if (params.patientId) {
       fetchPatientDetails()
+      fetchDoctorName()
     }
   }, [params.patientId])
 
@@ -80,9 +106,14 @@ export default function PatientDetailsPage() {
               Message
             </Button>
             <PrescriptionModalWrapper
-              doctorName="Doctor Name Placeholder"  
+              doctorName={doctorName}
               patientName={patient.name}
-              patientId={patient.healthBuddyID}
+              patientId={patient.id}
+              healthId={patient.healthBuddyID}
+              patientDetails={{
+                age: patient.dateOfBirth ? calculateAge(patient.dateOfBirth) : undefined,
+                gender: patient.gender,
+              }}
             />
           </div>
         </div>

@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Pencil, Trash2 } from "lucide-react"
+import { useToast } from "@/components/ui/use-toast"
 
 interface Medicine {
   id: string
@@ -23,6 +24,11 @@ interface PrescriptionFormModalProps {
   doctorName: string
   patientName: string
   patientId: string
+  healthId: string
+  patientDetails: {
+    age?: string
+    gender?: string
+  }
 }
 
 export function PrescriptionFormModal({
@@ -31,6 +37,8 @@ export function PrescriptionFormModal({
   doctorName,
   patientName,
   patientId,
+  healthId,
+  patientDetails,
 }: PrescriptionFormModalProps) {
   const [medicines, setMedicines] = useState<Medicine[]>([])
   const [currentMedicine, setCurrentMedicine] = useState<Medicine>({
@@ -41,14 +49,24 @@ export function PrescriptionFormModal({
     duration: "",
     instructions: "",
   })
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const { toast } = useToast()
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setCurrentMedicine({ ...currentMedicine, [e.target.name]: e.target.value })
   }
 
   const addMedicine = () => {
-    if (currentMedicine.name && currentMedicine.dosage && currentMedicine.frequency) {
-      setMedicines([...medicines, { ...currentMedicine, id: Date.now().toString() }])
+    if (currentMedicine.name && currentMedicine.dosage && currentMedicine.frequency && currentMedicine.duration) {
+      setMedicines([
+        ...medicines,
+        {
+          ...currentMedicine,
+          id: Date.now().toString(),
+          frequency: `${currentMedicine.frequency} time(s)`,
+          duration: `${currentMedicine.duration} day(s)`,
+        },
+      ])
       setCurrentMedicine({
         id: "",
         name: "",
@@ -72,10 +90,56 @@ export function PrescriptionFormModal({
     setMedicines(medicines.filter((m) => m.id !== id))
   }
 
-  const savePrescription = () => {
-    // Implement save functionality here
-    console.log("Saving prescription:", { doctorName, patientName, patientId, medicines })
-    onClose()
+  const savePrescription = async () => {
+    if (medicines.length === 0) {
+      toast({
+        title: "Error",
+        description: "Please add at least one medicine to the prescription",
+        variant: "destructive",
+      })
+      return
+    }
+
+    setIsSubmitting(true)
+    try {
+      const response = await fetch("/api/prescriptions", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          patientId,
+          healthId,
+          patientName,
+          patientDetails,
+          medicines,
+          date: new Date().toISOString(),
+        }),
+      })
+
+      if (!response.ok) {
+        throw new Error("Failed to save prescription")
+      }
+
+      const result = await response.json()
+      console.log("Prescription saved:", result)
+
+      toast({
+        title: "Success",
+        description: "Prescription saved successfully",
+      })
+      onClose()
+      window.dispatchEvent(new CustomEvent("prescriptionSaved"))
+    } catch (error) {
+      console.error("Error saving prescription:", error)
+      toast({
+        title: "Error",
+        description: "Failed to save prescription. Please try again.",
+        variant: "destructive",
+      })
+    } finally {
+      setIsSubmitting(false)
+    }
   }
 
   return (
@@ -87,15 +151,15 @@ export function PrescriptionFormModal({
         <div className="grid grid-cols-2 gap-4 mb-4">
           <div>
             <Label htmlFor="doctorName">Doctor Name</Label>
-            <Input id="doctorName" value={doctorName} readOnly />
+            <Input id="doctorName" value={doctorName || "Dr. Unknown"} readOnly />
           </div>
           <div>
             <Label htmlFor="patientName">Patient Name</Label>
             <Input id="patientName" value={patientName} readOnly />
           </div>
           <div>
-            <Label htmlFor="patientId">Patient ID</Label>
-            <Input id="patientId" value={patientId} readOnly />
+            <Label htmlFor="healthId">Health ID</Label>
+            <Input id="healthId" value={healthId} readOnly />
           </div>
           <div>
             <Label htmlFor="date">Date</Label>
@@ -190,8 +254,8 @@ export function PrescriptionFormModal({
             </TableBody>
           </Table>
         )}
-        <Button onClick={savePrescription} className="mt-4">
-          Save Prescription
+        <Button onClick={savePrescription} className="mt-4" disabled={isSubmitting}>
+          {isSubmitting ? "Saving..." : "Save Prescription"}
         </Button>
       </DialogContent>
     </Dialog>
