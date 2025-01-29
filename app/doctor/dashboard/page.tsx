@@ -5,16 +5,53 @@ import { useSession } from "next-auth/react"
 import Image from "next/image"
 import Link from "next/link"
 import { Card } from "@/components/ui/card"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { HomeIcon as House } from "lucide-react"
 
 export default function DoctorDashboard() {
   const { data: session } = useSession()
-  const currentDate = new Date()
-  const [selectedMonth, setSelectedMonth] = useState(currentDate.toLocaleString("default", { month: "long" }))
+  const [doctorDetails, setDoctorDetails] = useState({
+    name: "",
+    profileImage: null,
+    specialization: "",
+    dateOfBirth: "",
+    bloodGroup: "",
+    workingHours: "",
+  })
   const [calendarDates, setCalendarDates] = useState<Date[]>([])
 
-  // Calculate calendar dates for the current week
+  useEffect(() => {
+    const fetchDoctorDetails = async () => {
+      try {
+        const response = await fetch("/api/doctor/profile")
+        if (response.ok) {
+          const data = await response.json()
+          setDoctorDetails(data)
+        } else {
+          console.error("Failed to fetch doctor details")
+        }
+      } catch (error) {
+        console.error("Error fetching doctor details:", error)
+      }
+    }
+
+    fetchDoctorDetails()
+  }, [])
+
+  // useEffect(() => {
+  //   const today = new Date()
+  //   // const year = today.getFullYear()
+  //   // const month = today.getMonth()
+  //   // const firstDay = new Date(year, month, 1)
+  //   // const lastDay = new Date(year, month + 1, 0)
+
+  //   const dates = []
+  //   for (let d = new Date(firstDay); d <= lastDay; d.setDate(d.getDate() + 1)) {
+  //     dates.push(new Date(d))
+  //   }
+
+  //   setCalendarDates(dates)
+  // }, [])
+
   useEffect(() => {
     const today = new Date()
     const currentDay = today.getDay()
@@ -31,6 +68,10 @@ export default function DoctorDashboard() {
 
     setCalendarDates(dates)
   }, [])
+
+  const currentDate = new Date()
+  // const currentMonth = currentDate.toLocaleString("en-US", { month: "long", year: "numeric" })
+  // const firstDay = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1)
 
   const SectionHeader = ({ title, children, href }: { title: string; children?: React.ReactNode; href: string }) => (
     <div className="bg-[#006D5B] text-white p-4 rounded-lg mb-2 flex justify-between items-center">
@@ -49,7 +90,7 @@ export default function DoctorDashboard() {
         {/* Left Column - 60% */}
         <div className="lg:col-span-3 space-y-6">
           {/* Welcome Banner */}
-          <Card className="bg-[#006D5B] text-white pt-4 pr-4 pb-0 pl-4 md:pt-2 md:pr-6 md:pb-0 md:pl-6 relative overflow-hidden ">
+          <Card className="bg-[#006D5B] text-white pt-4 pr-4 pl-4 pb-0 md:pt-4 pr-4 pl-4 pb-0 relative overflow-hidden">
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center">
               <div className="z-10 mb-4 md:mb-0">
                 <div className="flex items-center space-x-2 text-sm">
@@ -73,7 +114,7 @@ export default function DoctorDashboard() {
                   src="/assets/images/doctor-illustration.png"
                   alt="Doctor"
                   layout="fill"
-                  objectFit="contain"
+                  // objectFit="contain"
                   objectPosition="right bottom"
                 />
               </div>
@@ -114,10 +155,10 @@ export default function DoctorDashboard() {
             </SectionHeader>
             <Card className="p-4">
               <div className="flex flex-col items-center">
-                <div className="flex items-center space-x-6 mb-4">
+                <div className="flex items-center space-x-20 mb-4 ">
                   <div className="w-24 h-24 rounded-full overflow-hidden">
                     <Image
-                      src="/assets/icons/profile-placeholder.png"
+                      src={doctorDetails.profileImage || "/assets/icons/profile-placeholder.png"}
                       alt="Doctor Profile"
                       width={96}
                       height={96}
@@ -125,22 +166,22 @@ export default function DoctorDashboard() {
                     />
                   </div>
                   <div>
-                    <h3 className="font-semibold text-lg">Dr. {session?.user?.name}</h3>
-                    <p className="text-gray-500">Cardiologist</p>
+                    <h3 className="font-bold text-xl text-gray-900">Dr. {doctorDetails.name}</h3>
+                    <p className="text-lg text-gray-600 mt-2">{doctorDetails.specialization || "Specialization"}</p>
                   </div>
                 </div>
                 <div className="grid grid-cols-3 gap-4 w-full text-center text-sm">
                   <div>
                     <p className="text-gray-500">Date Of Birth</p>
-                    <p className="font-medium">--/--/--</p>
+                    <p className="font-medium">{doctorDetails.dateOfBirth || "--/--/--"}</p>
                   </div>
                   <div>
                     <p className="text-gray-500">Blood</p>
-                    <p className="font-medium">--</p>
+                    <p className="font-medium">{doctorDetails.bloodGroup || "--"}</p>
                   </div>
                   <div>
                     <p className="text-gray-500">Working Hours</p>
-                    <p className="font-medium">--:-- - --:--</p>
+                    <p className="font-medium">{doctorDetails.workingHours || "--:-- - --:--"}</p>
                   </div>
                 </div>
               </div>
@@ -150,31 +191,9 @@ export default function DoctorDashboard() {
           {/* My Calendar */}
           <div>
             <SectionHeader title="My Calendar" href="/doctor/schedule">
-              <Select value={selectedMonth} onValueChange={setSelectedMonth}>
-                <SelectTrigger className="w-[120px] bg-white/10 border-0 text-white">
-                  <SelectValue>{selectedMonth}</SelectValue>
-                </SelectTrigger>
-                <SelectContent>
-                  {[
-                    "January",
-                    "February",
-                    "March",
-                    "April",
-                    "May",
-                    "June",
-                    "July",
-                    "August",
-                    "September",
-                    "October",
-                    "November",
-                    "December",
-                  ].map((month) => (
-                    <SelectItem key={month} value={month}>
-                      {month}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <span className="text-white">
+                {currentDate.toLocaleString("default", { month: "long", year: "numeric" })}
+              </span>
             </SectionHeader>
             <Card className="p-4">
               <div className="grid grid-cols-7 gap-2">

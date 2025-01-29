@@ -167,8 +167,12 @@ export default function PatientsPage() {
                 </div>
                 <h3 className="font-semibold text-lg mb-1">{patient.name}</h3>
                 <p className="text-gray-500 text-sm mb-4">HealthID: {patient.healthBuddyID}</p>
-                <Button className="w-full bg-[#006D5B] hover:bg-[#005c4d]" variant="secondary">
-                  view
+                <Button
+                  className="w-full bg-[#006D5B] hover:bg-[#005c4d]"
+                  variant="secondary"
+                  onClick={() => router.push(`/doctor/patients/${patient.id}`)}
+                >
+                  View
                 </Button>
               </div>
               <button

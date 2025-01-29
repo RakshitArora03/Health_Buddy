@@ -48,7 +48,7 @@ export default function RegisterPage() {
         redirect: false,
         email: formData.email,
         password: formData.password,
-        userType,
+        userType: userType,
       })
 
       if (result?.error) {

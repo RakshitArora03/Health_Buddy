@@ -114,7 +114,7 @@ export default function ProfilePage() {
   }
 
   if (!session) {
-    router.push("/login")
+    router.push("/")
     return null
   }
 
