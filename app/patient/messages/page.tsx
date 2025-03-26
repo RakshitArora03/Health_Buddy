@@ -6,14 +6,14 @@ import { Input } from "@/components/ui/input"
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Skeleton } from "@/components/ui/skeleton"
 import { useToast } from "@/components/ui/use-toast"
-import ChatArea from "@/components/doctor/messages/chat-area"
-import PatientChatItem from "@/components/doctor/messages/patient-chat-item"
+import ChatArea from "@/components/patient/messages/chat-area"
+import DoctorChatItem from "@/components/patient/messages/doctor-chat-item"
 import { useMediaQuery } from "@/hooks/use-media-query"
 
-interface Patient {
+interface Doctor {
   id: string
   name: string
-  healthBuddyID?: string
+  specialization: string
   profileImage?: string
   lastMessage?: string
   lastMessageTime?: string
@@ -22,10 +22,10 @@ interface Patient {
 }
 
 export default function MessagesPage() {
-  const [patients, setPatients] = useState<Patient[]>([])
+  const [doctors, setDoctors] = useState<Doctor[]>([])
   const [loading, setLoading] = useState(true)
   const [searchQuery, setSearchQuery] = useState("")
-  const [selectedPatient, setSelectedPatient] = useState<Patient | null>(null)
+  const [selectedDoctor, setSelectedDoctor] = useState<Doctor | null>(null)
   const [activeTab, setActiveTab] = useState("all")
   const { toast } = useToast()
 
@@ -35,37 +35,37 @@ export default function MessagesPage() {
   const [showChatOnMobile, setShowChatOnMobile] = useState(false)
 
   useEffect(() => {
-    const fetchPatients = async () => {
+    const fetchDoctors = async () => {
       try {
-        const response = await fetch("/api/doctor/patients")
+        const response = await fetch("/api/patient/doctors")
         if (!response.ok) {
-          throw new Error("Failed to fetch patients")
+          throw new Error("Failed to fetch doctors")
         }
         const data = await response.json()
 
         // Add mock last message data for demonstration
-        const patientsWithMessages = data.map((patient: Patient, index: number) => ({
-          ...patient,
+        const doctorsWithMessages = data.map((doctor: Doctor, index: number) => ({
+          ...doctor,
           lastMessage:
             index % 3 === 0
-              ? "Hello doctor, I have a question about my prescription."
+              ? "Hello, how are you feeling today?"
               : index % 3 === 1
-                ? "Thank you for your help yesterday."
-                : "When is my next appointment?",
+                ? "Your test results look good."
+                : "Remember to take your medication regularly.",
           lastMessageTime: index % 2 === 0 ? "10:30" : "Yesterday",
           unread: index % 4 === 0 ? 2 : 0,
           isPinned: index % 5 === 0,
         }))
 
-        setPatients(patientsWithMessages)
-        if (patientsWithMessages.length > 0) {
-          setSelectedPatient(patientsWithMessages[0])
+        setDoctors(doctorsWithMessages)
+        if (doctorsWithMessages.length > 0) {
+          setSelectedDoctor(doctorsWithMessages[0])
         }
       } catch (error) {
-        console.error("Error fetching patients:", error)
+        console.error("Error fetching doctors:", error)
         toast({
           title: "Error",
-          description: "Failed to load patients. Please try again later.",
+          description: "Failed to load doctors. Please try again later.",
           variant: "destructive",
         })
       } finally {
@@ -73,7 +73,7 @@ export default function MessagesPage() {
       }
     }
 
-    fetchPatients()
+    fetchDoctors()
   }, [toast])
 
   // Reset mobile view state when screen size changes
@@ -83,13 +83,13 @@ export default function MessagesPage() {
     }
   }, [isMobile])
 
-  const handlePatientSelect = (patient: Patient) => {
-    // If the patient has unread messages, mark them as read
-    if (patient.unread && patient.unread > 0) {
-      handleMarkAsRead(patient.id)
+  const handleDoctorSelect = (doctor: Doctor) => {
+    // If the doctor has unread messages, mark them as read
+    if (doctor.unread && doctor.unread > 0) {
+      handleMarkAsRead(doctor.id)
     }
 
-    setSelectedPatient(patient)
+    setSelectedDoctor(doctor)
     if (isMobile) {
       setShowChatOnMobile(true)
     }
@@ -99,43 +99,43 @@ export default function MessagesPage() {
     setShowChatOnMobile(false)
   }
 
-  const handlePinPatient = (patientId: string) => {
-    setPatients((prevPatients) =>
-      prevPatients.map((patient) => (patient.id === patientId ? { ...patient, isPinned: !patient.isPinned } : patient)),
+  const handlePinDoctor = (doctorId: string) => {
+    setDoctors((prevDoctors) =>
+      prevDoctors.map((doctor) => (doctor.id === doctorId ? { ...doctor, isPinned: !doctor.isPinned } : doctor)),
     )
 
     toast({
       title: "Chat updated",
-      description: `Chat ${patients.find((p) => p.id === patientId)?.isPinned ? "unpinned" : "pinned"} successfully`,
+      description: `Chat ${doctors.find((d) => d.id === doctorId)?.isPinned ? "unpinned" : "pinned"} successfully`,
     })
   }
 
-  const handleMarkAsRead = (patientId: string) => {
-    setPatients((prevPatients) =>
-      prevPatients.map((patient) => (patient.id === patientId ? { ...patient, unread: 0 } : patient)),
+  const handleMarkAsRead = (doctorId: string) => {
+    setDoctors((prevDoctors) =>
+      prevDoctors.map((doctor) => (doctor.id === doctorId ? { ...doctor, unread: 0 } : doctor)),
     )
   }
 
-  // Filter patients based on search query and active tab
-  const getFilteredPatients = () => {
-    let filtered = patients
+  // Filter doctors based on search query and active tab
+  const getFilteredDoctors = () => {
+    let filtered = doctors
 
     // Apply search filter
     if (searchQuery) {
-      filtered = filtered.filter((patient) => patient.name.toLowerCase().includes(searchQuery.toLowerCase()))
+      filtered = filtered.filter((doctor) => doctor.name.toLowerCase().includes(searchQuery.toLowerCase()))
     }
 
     // Apply tab filter
     if (activeTab === "unread") {
-      filtered = filtered.filter((patient) => patient.unread && patient.unread > 0)
+      filtered = filtered.filter((doctor) => doctor.unread && doctor.unread > 0)
     }
 
     return filtered
   }
 
-  const filteredPatients = getFilteredPatients()
-  const pinnedPatients = filteredPatients.filter((patient) => patient.isPinned)
-  const regularPatients = filteredPatients.filter((patient) => !patient.isPinned)
+  const filteredDoctors = getFilteredDoctors()
+  const pinnedDoctors = filteredDoctors.filter((doctor) => doctor.isPinned)
+  const regularDoctors = filteredDoctors.filter((doctor) => !doctor.isPinned)
 
   // Determine what to show based on mobile state
   const showSidebar = !isMobile || (isMobile && !showChatOnMobile)
@@ -147,7 +147,7 @@ export default function MessagesPage() {
       {showSidebar && (
         <div className={`${isMobile ? "w-full" : "w-80"} border-r bg-white flex flex-col`}>
           <div className="p-4 border-b">
-            <h1 className="text-xl font-bold text-[#006D5B] mb-4">Messages</h1>
+            <h1 className="text-xl font-bold text-blue-600 mb-4">Messages</h1>
             <Tabs defaultValue="all" value={activeTab} onValueChange={setActiveTab}>
               <TabsList className="w-full mb-4">
                 <TabsTrigger value="all" className="flex-1">
@@ -161,7 +161,7 @@ export default function MessagesPage() {
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
                 <Input
-                  placeholder="Search patients"
+                  placeholder="Search doctors"
                   className="pl-10"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
@@ -185,18 +185,18 @@ export default function MessagesPage() {
               </div>
             ) : (
               <>
-                {pinnedPatients.length > 0 && (
+                {pinnedDoctors.length > 0 && (
                   <div className="pt-2">
                     <div className="px-4 py-2 text-sm font-medium text-gray-500 flex items-center">
                       <PinIcon className="h-4 w-4 mr-2" /> Pinned
                     </div>
-                    {pinnedPatients.map((patient) => (
-                      <PatientChatItem
-                        key={patient.id}
-                        patient={patient}
-                        isSelected={selectedPatient?.id === patient.id}
-                        onClick={() => handlePatientSelect(patient)}
-                        onPin={handlePinPatient}
+                    {pinnedDoctors.map((doctor) => (
+                      <DoctorChatItem
+                        key={doctor.id}
+                        doctor={doctor}
+                        isSelected={selectedDoctor?.id === doctor.id}
+                        onClick={() => handleDoctorSelect(doctor)}
+                        onPin={handlePinDoctor}
                         onMarkAsRead={handleMarkAsRead}
                       />
                     ))}
@@ -207,24 +207,24 @@ export default function MessagesPage() {
                   <div className="px-4 py-2 text-sm font-medium text-gray-500 flex items-center">
                     <Clock className="h-4 w-4 mr-2" /> Recent
                   </div>
-                  {regularPatients.length > 0 ? (
-                    regularPatients.map((patient) => (
-                      <PatientChatItem
-                        key={patient.id}
-                        patient={patient}
-                        isSelected={selectedPatient?.id === patient.id}
-                        onClick={() => handlePatientSelect(patient)}
-                        onPin={handlePinPatient}
+                  {regularDoctors.length > 0 ? (
+                    regularDoctors.map((doctor) => (
+                      <DoctorChatItem
+                        key={doctor.id}
+                        doctor={doctor}
+                        isSelected={selectedDoctor?.id === doctor.id}
+                        onClick={() => handleDoctorSelect(doctor)}
+                        onPin={handlePinDoctor}
                         onMarkAsRead={handleMarkAsRead}
                       />
                     ))
                   ) : (
                     <div className="px-4 py-8 text-center text-gray-500">
                       {searchQuery
-                        ? "No patients match your search"
+                        ? "No doctors match your search"
                         : activeTab === "unread"
                           ? "No unread messages"
-                          : "No patients found"}
+                          : "No doctors found"}
                     </div>
                   )}
                 </div>
@@ -237,16 +237,16 @@ export default function MessagesPage() {
       {/* Main chat area */}
       {showChat && (
         <div className="flex-1 flex flex-col bg-gray-50">
-          {selectedPatient ? (
-            <ChatArea patient={selectedPatient} onBack={isMobile ? handleBackToList : undefined} />
+          {selectedDoctor ? (
+            <ChatArea doctor={selectedDoctor} onBack={isMobile ? handleBackToList : undefined} />
           ) : (
             <div className="flex-1 flex flex-col items-center justify-center text-center p-8">
-              <div className="bg-[#006D5B] rounded-full p-6 mb-4">
+              <div className="bg-blue-500 rounded-full p-6 mb-4">
                 <User className="h-12 w-12 text-white" />
               </div>
               <h2 className="text-2xl font-bold text-gray-800 mb-2">Your Messages</h2>
               <p className="text-gray-500 max-w-md">
-                Select a patient from the sidebar to view your conversation history and send messages.
+                Select a doctor from the sidebar to view your conversation history and send messages.
               </p>
             </div>
           )}

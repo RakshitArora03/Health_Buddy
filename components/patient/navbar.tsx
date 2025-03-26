@@ -1,7 +1,20 @@
 "use client"
 
+import type React from "react"
+
 import { useState, useEffect } from "react"
-import { Home, User, Search, Clock, LogOut, Menu, X, UserPlus, UserIcon as UserMd, FileText } from "lucide-react"
+import {
+  Home,
+  User,
+  Search,
+  LogOut,
+  Menu,
+  X,
+  UserPlus,
+  UserIcon as UserMd,
+  FileText,
+  MessageSquare,
+} from "lucide-react"
 import { Button } from "@/components/ui/button"
 import {
   AlertDialog,
@@ -40,7 +53,7 @@ export default function Navbar() {
 
   const handleLogout = async () => {
     await signOut({ redirect: false })
-    router.push("/login")
+    router.push("/")
   }
 
   const handleHealthIdRegistrationClick = (e: React.MouseEvent) => {
@@ -103,6 +116,9 @@ export default function Navbar() {
             <NavLink href="/patient/prescriptions" icon={FileText}>
               Prescriptions
             </NavLink>
+            <NavLink href="/patient/messages" icon={MessageSquare}>
+              Messages
+            </NavLink>
             <NavLink href="/patient/health-id-registration" icon={UserPlus} onClick={handleHealthIdRegistrationClick}>
               Health ID Registration
             </NavLink>
@@ -141,6 +157,9 @@ export default function Navbar() {
               </NavLink>
               <NavLink href="/patient/prescriptions" icon={FileText}>
                 Prescriptions
+              </NavLink>
+              <NavLink href="/patient/messages" icon={MessageSquare}>
+                Messages
               </NavLink>
               <NavLink href="/patient/health-id-registration" icon={UserPlus} onClick={handleHealthIdRegistrationClick}>
                 Health ID Registration
