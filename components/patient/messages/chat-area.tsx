@@ -6,8 +6,11 @@ import { useState, useRef, useEffect } from "react"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { Send, Paperclip, MoreVertical, Phone, Video, ArrowLeft } from "lucide-react"
+import { Send, Paperclip, MoreVertical, Phone, Video, ArrowLeft, Check, CheckCheck } from "lucide-react"
 import { format } from "date-fns"
+import { useSession } from "next-auth/react"
+import { useToast } from "@/components/ui/use-toast"
+import { generateId } from "@/lib/utils"
 
 interface Doctor {
   id: string
@@ -17,11 +20,14 @@ interface Doctor {
 }
 
 interface Message {
-  id: string
-  content: string
-  sender: "doctor" | "patient"
+  _id?: string
+  id?: string
+  conversationId: string
+  senderId: string
+  receiverId: string
+  message: string
   timestamp: Date
-  status?: "sent" | "delivered" | "read"
+  status?: "sent" | "delivered" | "seen"
 }
 
 interface ChatAreaProps {
@@ -30,51 +36,164 @@ interface ChatAreaProps {
 }
 
 export default function ChatArea({ doctor, onBack }: ChatAreaProps) {
+  const { data: session } = useSession()
+  const { toast } = useToast()
+
   const [message, setMessage] = useState("")
   const [messages, setMessages] = useState<Message[]>([])
+  const [conversationId, setConversationId] = useState<string | null>(null)
+  const [loading, setLoading] = useState(true)
   const messagesEndRef = useRef<HTMLDivElement>(null)
+  const [polling, setPolling] = useState<NodeJS.Timeout | null>(null)
 
-  // Mock messages for demonstration
+  // Fetch or create conversation
   useEffect(() => {
-    // Generate some mock messages when doctor changes
-    const mockMessages: Message[] = [
-      {
-        id: "1",
-        content: `Hello, how are you feeling today?`,
-        sender: "doctor",
-        timestamp: new Date(Date.now() - 1000 * 60 * 60 * 24), // 1 day ago
-      },
-      {
-        id: "2",
-        content: "I'm feeling much better, thank you for asking.",
-        sender: "patient",
-        timestamp: new Date(Date.now() - 1000 * 60 * 60 * 23), // 23 hours ago
-        status: "read",
-      },
-      {
-        id: "3",
-        content: "Have you been taking your medication regularly?",
-        sender: "doctor",
-        timestamp: new Date(Date.now() - 1000 * 60 * 60 * 22), // 22 hours ago
-      },
-      {
-        id: "4",
-        content: "Yes, I've been following the prescription exactly as you recommended.",
-        sender: "patient",
-        timestamp: new Date(Date.now() - 1000 * 60 * 60 * 21), // 21 hours ago
-        status: "read",
-      },
-      {
-        id: "5",
-        content: "That's great to hear. Keep it up and let me know if you experience any side effects.",
-        sender: "doctor",
-        timestamp: new Date(Date.now() - 1000 * 60 * 30), // 30 minutes ago
-      },
-    ]
+    const getOrCreateConversation = async () => {
+      try {
+        setLoading(true)
+        const response = await fetch("/api/conversations", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            participantId: doctor.id,
+          }),
+        })
 
-    setMessages(mockMessages)
-  }, [doctor.id])
+        if (!response.ok) {
+          throw new Error("Failed to get conversation")
+        }
 
+        const data = await response.json()
+        setConversationId(data.conversationId)
+      } catch (error) {
+        console.error("Error getting conversation:", error)
+        toast({
+          title: "Error",
+          description: "Failed to load conversation. Please try again.",
+          variant: "destructive",
+        })
+        setLoading(false)
+      }
+    }
+
+    if (doctor.id && session?.user?.id) {
+      getOrCreateConversation()
+    }
+
+    return () => {
+      if (polling) clearInterval(polling)
+    }
+  }, [doctor.id, session?.user?.id, toast, polling])
+
+  // Fetch messages when conversation is available
+  useEffect(() => {
+    let interval: NodeJS.Timeout | null = null
+    let visibilityHandler: ((event: Event) => void) | null = null
+
+    const fetchMessages = async () => {
+      if (!conversationId) return
+
+      try {
+        const response = await fetch(`/api/messages/${conversationId}`)
+
+        if (!response.ok) {
+          throw new Error(`Failed to fetch messages: ${response.status} ${response.statusText}`)
+        }
+
+        const data = await response.json()
+        console.log("Fetched messages:", data.length)
+        setMessages(data)
+        setLoading(false)
+      } catch (error) {
+        console.error("Error fetching messages:", error)
+        toast({
+          title: "Error",
+          description: "Failed to load messages. Please try again.",
+          variant: "destructive",
+        })
+        setLoading(false)
+      }
+    }
+
+    if (conversationId) {
+      console.log("Fetching messages for conversation:", conversationId)
+      fetchMessages()
+
+      // Set up polling with a better strategy
+      interval = setInterval(() => {
+        // Only fetch if the component is mounted and visible
+        if (document.visibilityState === "visible") {
+          fetchMessages()
+        }
+      }, 5000) // Poll every 5 seconds
+
+      // Add event listener for visibility change
+      visibilityHandler = () => {
+        if (document.visibilityState === "visible") {
+          fetchMessages() // Fetch immediately when tab becomes visible
+        }
+      }
+
+      document.addEventListener("visibilitychange", visibilityHandler)
+
+      return () => {
+        console.log("Cleaning up message polling")
+        if (interval) clearInterval(interval)
+        if (visibilityHandler) {
+          document.removeEventListener("visibilitychange", visibilityHandler)
+        }
+      }
+    }
+
+    return () => {
+      console.log("Cleaning up when conversationId is not available")
+      if (interval) clearInterval(interval)
+      if (visibilityHandler) {
+        document.removeEventListener("visibilitychange", visibilityHandler)
+      }
+    }
+  }, [conversationId, toast])
+
+  // Mark messages as read
+  useEffect(() => {
+    const markMessagesAsRead = async () => {
+      if (!conversationId) return
+
+      try {
+        await fetch("/api/messages/read", {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            conversationId,
+          }),
+        })
+
+        // Update local message status
+        setMessages((prevMessages) =>
+          prevMessages.map((msg) =>
+            msg.receiverId === session?.user?.id && msg.status !== "seen" ? { ...msg, status: "seen" } : msg,
+          ),
+        )
+      } catch (error) {
+        console.error("Error marking messages as read:", error)
+      }
+    }
+
+    if (conversationId && session?.user?.id) {
+      // Only mark as read if there are unread messages
+      const hasUnreadMessages = messages.some((msg) => msg.receiverId === session.user.id && msg.status !== "seen")
+
+      if (hasUnreadMessages) {
+        markMessagesAsRead()
+      }
+    }
+  }, [conversationId, session?.user?.id, messages])
+
+  // Scroll to bottom when messages change
   useEffect(() => {
     scrollToBottom()
   }, [messages])
@@ -83,19 +202,49 @@ export default function ChatArea({ doctor, onBack }: ChatAreaProps) {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })
   }
 
-  const handleSendMessage = () => {
-    if (message.trim() === "") return
+  const handleSendMessage = async () => {
+    if (message.trim() === "" || !conversationId) return
 
+    const messageId = generateId()
     const newMessage: Message = {
-      id: Date.now().toString(),
-      content: message,
-      sender: "patient",
+      id: messageId,
+      conversationId,
+      senderId: session?.user?.id || "",
+      receiverId: doctor.id,
+      message: message.trim(),
       timestamp: new Date(),
       status: "sent",
     }
 
-    setMessages([...messages, newMessage])
+    // Optimistically add message to UI
+    setMessages((prev) => [...prev, newMessage])
     setMessage("")
+
+    try {
+      // Send message to server
+      const response = await fetch("/api/messages", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          conversationId,
+          receiverId: doctor.id,
+          message: newMessage.message,
+        }),
+      })
+
+      if (!response.ok) {
+        throw new Error("Failed to send message")
+      }
+    } catch (error) {
+      console.error("Error sending message:", error)
+      toast({
+        title: "Error",
+        description: "Failed to send message. Please try again.",
+        variant: "destructive",
+      })
+    }
   }
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -127,7 +276,8 @@ export default function ChatArea({ doctor, onBack }: ChatAreaProps) {
     const groups: { date: string; messages: Message[] }[] = []
 
     messages.forEach((message) => {
-      const dateStr = formatMessageDate(message.timestamp)
+      const messageDate = new Date(message.timestamp)
+      const dateStr = formatMessageDate(messageDate)
       const existingGroup = groups.find((group) => group.date === dateStr)
 
       if (existingGroup) {
@@ -138,6 +288,19 @@ export default function ChatArea({ doctor, onBack }: ChatAreaProps) {
     })
 
     return groups
+  }
+
+  const renderMessageStatus = (status: string | undefined) => {
+    switch (status) {
+      case "sent":
+        return <Check className="h-3 w-3 text-gray-400" />
+      case "delivered":
+        return <Check className="h-3 w-3 text-gray-400" />
+      case "seen":
+        return <CheckCheck className="h-3 w-3 text-blue-500" />
+      default:
+        return null
+    }
   }
 
   const initials = doctor.name
@@ -181,44 +344,58 @@ export default function ChatArea({ doctor, onBack }: ChatAreaProps) {
 
       {/* Messages area */}
       <div className="flex-1 overflow-y-auto p-4 space-y-6">
-        {groupMessagesByDate().map((group, groupIndex) => (
-          <div key={groupIndex} className="space-y-4">
-            <div className="flex justify-center">
-              <span className="px-3 py-1 bg-gray-200 rounded-full text-xs text-gray-600">{group.date}</span>
-            </div>
+        {loading ? (
+          <div className="flex justify-center items-center h-full">
+            <p className="text-gray-500">Loading messages...</p>
+          </div>
+        ) : messages.length === 0 ? (
+          <div className="flex flex-col justify-center items-center h-full text-center">
+            <p className="text-gray-500 mb-2">No messages yet</p>
+            <p className="text-sm text-gray-400">Send a message to start the conversation</p>
+          </div>
+        ) : (
+          groupMessagesByDate().map((group, groupIndex) => (
+            <div key={groupIndex} className="space-y-4">
+              <div className="flex justify-center">
+                <span className="px-3 py-1 bg-gray-200 rounded-full text-xs text-gray-600">{group.date}</span>
+              </div>
 
-            {group.messages.map((msg) => (
-              <div key={msg.id} className={`flex ${msg.sender === "patient" ? "justify-end" : "justify-start"}`}>
-                <div className="flex items-end space-x-2 max-w-[70%]">
-                  {msg.sender === "doctor" && (
-                    <Avatar className="h-8 w-8">
-                      <AvatarImage src={doctor.profileImage} alt={doctor.name} />
-                      <AvatarFallback className="bg-blue-100 text-blue-800">{initials}</AvatarFallback>
-                    </Avatar>
-                  )}
+              {group.messages.map((msg) => (
+                <div
+                  key={msg._id || msg.id}
+                  className={`flex ${msg.senderId === session?.user?.id ? "justify-end" : "justify-start"}`}
+                >
+                  <div className="flex items-end space-x-2 max-w-[70%]">
+                    {msg.senderId !== session?.user?.id && (
+                      <Avatar className="h-8 w-8">
+                        <AvatarImage src={doctor.profileImage} alt={doctor.name} />
+                        <AvatarFallback className="bg-blue-100 text-blue-800">{initials}</AvatarFallback>
+                      </Avatar>
+                    )}
 
-                  <div>
-                    <div
-                      className={`p-3 rounded-lg ${
-                        msg.sender === "patient"
-                          ? "bg-blue-500 text-white rounded-br-none"
-                          : "bg-white border rounded-bl-none"
-                      }`}
-                    >
-                      {msg.content}
-                    </div>
-                    <div className="flex items-center mt-1 text-xs text-gray-500">
-                      <span>{formatMessageTime(msg.timestamp)}</span>
-                      {msg.sender === "patient" && msg.status && (
-                        <span className="ml-2">{msg.status === "read" ? "Read" : msg.status}</span>
-                      )}
+                    <div>
+                      <div
+                        className={`p-3 rounded-lg ${
+                          msg.senderId === session?.user?.id
+                            ? "bg-blue-500 text-white rounded-br-none"
+                            : "bg-white border rounded-bl-none"
+                        }`}
+                      >
+                        {msg.message}
+                      </div>
+                      <div className="flex items-center mt-1 text-xs text-gray-500">
+                        <span>{formatMessageTime(new Date(msg.timestamp))}</span>
+                        {msg.senderId === session?.user?.id && (
+                          <span className="ml-2 flex items-center">{renderMessageStatus(msg.status)}</span>
+                        )}
+                      </div>
                     </div>
                   </div>
                 </div>
-              </div>
-            ))}
-          </div>
-        ))}
+              ))}
+            </div>
+          ))
+        )}
         <div ref={messagesEndRef} />
       </div>
 

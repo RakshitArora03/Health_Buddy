@@ -27,23 +27,45 @@ export async function POST(request: Request) {
     // Check if relationship already exists
     const existingRelation = await db.collection("doctorPatients").findOne({
       doctorId: doctor._id.toString(),
-      patientId: patientId, // Use the string ID directly
+      patientId: patientId,
     })
 
     if (existingRelation) {
-      // If the relationship already exists, we'll consider this a success
-      // as the patient is already in the doctor's list
       return NextResponse.json({ message: "Patient already in your list", alreadyAdded: true })
+    }
+
+    // Create a conversation between doctor and patient
+    if (!existingRelation) {
+      // Create a conversation between doctor and patient
+      await db.collection("conversations").insertOne({
+        participants: [doctor._id.toString(), patientId],
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      })
     }
 
     // Create the doctor-patient relationship
     await db.collection("doctorPatients").insertOne({
       doctorId: doctor._id.toString(),
-      patientId: patientId, // Use the string ID directly
+      patientId: patientId,
       createdAt: new Date(),
     })
 
-    return NextResponse.json({ message: "Patient added successfully" })
+    // Fetch the complete patient data
+    const patient = await db.collection("patients").findOne({ _id: new ObjectId(patientId) })
+
+    if (!patient) {
+      return NextResponse.json({ error: "Patient not found" }, { status: 404 })
+    }
+
+    const formattedPatient = {
+      id: patient._id.toString(),
+      name: patient.name || patient.fullName,
+      healthBuddyID: patient.healthBuddyUID,
+      profileImage: patient.profileImage,
+    }
+
+    return NextResponse.json({ message: "Patient added successfully", patient: formattedPatient })
   } catch (error) {
     console.error("Error adding patient to doctor:", error)
     return NextResponse.json({ error: "Internal server error" }, { status: 500 })

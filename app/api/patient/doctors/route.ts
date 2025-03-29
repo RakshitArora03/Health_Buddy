@@ -80,6 +80,13 @@ export async function POST(request: Request) {
       return NextResponse.json({ message: "Doctor already in your list", alreadyAdded: true })
     }
 
+    // Create a conversation between patient and doctor
+    await db.collection("conversations").insertOne({
+      participants: [patient._id.toString(), doctorId],
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    })
+
     // Create the doctor-patient relationship
     await db.collection("doctorPatients").insertOne({
       doctorId: doctorId,

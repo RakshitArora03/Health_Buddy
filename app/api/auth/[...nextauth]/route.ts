@@ -45,6 +45,7 @@ export const authOptions: NextAuthOptions = {
       if (user) {
         token.userType = user.userType
         token.name = user.name
+        token.id = user.id // Add user ID to token
       }
       return token
     },
@@ -52,6 +53,7 @@ export const authOptions: NextAuthOptions = {
       if (session?.user) {
         session.user.userType = token.userType as string
         session.user.name = token.name as string
+        session.user.id = token.id as string // Add user ID to session
       }
       return session
     },

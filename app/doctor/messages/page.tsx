@@ -1,14 +1,17 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { Search, User, Clock, PinIcon } from "lucide-react"
+import { Search, User, Clock, PinIcon, Plus } from "lucide-react"
 import { Input } from "@/components/ui/input"
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Skeleton } from "@/components/ui/skeleton"
+import { Button } from "@/components/ui/button"
 import { useToast } from "@/components/ui/use-toast"
 import ChatArea from "@/components/doctor/messages/chat-area"
 import PatientChatItem from "@/components/doctor/messages/patient-chat-item"
 import { useMediaQuery } from "@/hooks/use-media-query"
+import { useSession } from "next-auth/react"
+import StartChatModal from "@/components/doctor/messages/start-chat-modal"
 
 interface Patient {
   id: string
@@ -19,62 +22,97 @@ interface Patient {
   lastMessageTime?: string
   unread?: number
   isPinned?: boolean
+  conversationId?: string
 }
 
 export default function MessagesPage() {
+  const { data: session } = useSession()
   const [patients, setPatients] = useState<Patient[]>([])
   const [loading, setLoading] = useState(true)
   const [searchQuery, setSearchQuery] = useState("")
   const [selectedPatient, setSelectedPatient] = useState<Patient | null>(null)
   const [activeTab, setActiveTab] = useState("all")
   const { toast } = useToast()
+  const [polling, setPolling] = useState<NodeJS.Timeout | null>(null)
+  const [isStartChatModalOpen, setIsStartChatModalOpen] = useState(false)
 
   // Check if we're on mobile
   const isMobile = useMediaQuery("(max-width: 768px)")
   // State to track if we're viewing a chat on mobile
   const [showChatOnMobile, setShowChatOnMobile] = useState(false)
 
+  const fetchConversations = async () => {
+    try {
+      const response = await fetch("/api/conversations")
+      if (!response.ok) {
+        throw new Error("Failed to fetch conversations")
+      }
+      const data = await response.json()
+
+      // Transform the data to match our Patient interface
+      const patientsData = data.map((conversation: any) => ({
+        id: conversation.otherParticipant.id,
+        name: conversation.otherParticipant.name,
+        healthBuddyID: conversation.otherParticipant.healthBuddyID,
+        profileImage: conversation.otherParticipant.profileImage,
+        lastMessage: conversation.lastMessage || "No messages yet",
+        lastMessageTime: conversation.lastMessageTime
+          ? new Date(conversation.lastMessageTime).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
+          : "No messages",
+        unread: 0, // We'll update this with actual unread count
+        isPinned: false, // We'll need to add this feature to the backend
+        conversationId: conversation.id,
+      }))
+
+      setPatients(patientsData)
+      setLoading(false)
+    } catch (error) {
+      console.error("Error fetching conversations:", error)
+      toast({
+        title: "Error",
+        description: "Failed to load conversations. Please try again later.",
+        variant: "destructive",
+      })
+      setLoading(false)
+    }
+  }
+
   useEffect(() => {
-    const fetchPatients = async () => {
-      try {
-        const response = await fetch("/api/doctor/patients")
-        if (!response.ok) {
-          throw new Error("Failed to fetch patients")
-        }
-        const data = await response.json()
+    let interval: NodeJS.Timeout | null = null
 
-        // Add mock last message data for demonstration
-        const patientsWithMessages = data.map((patient: Patient, index: number) => ({
-          ...patient,
-          lastMessage:
-            index % 3 === 0
-              ? "Hello doctor, I have a question about my prescription."
-              : index % 3 === 1
-                ? "Thank you for your help yesterday."
-                : "When is my next appointment?",
-          lastMessageTime: index % 2 === 0 ? "10:30" : "Yesterday",
-          unread: index % 4 === 0 ? 2 : 0,
-          isPinned: index % 5 === 0,
-        }))
+    if (session?.user?.id) {
+      console.log("Setting up conversation polling")
+      fetchConversations()
 
-        setPatients(patientsWithMessages)
-        if (patientsWithMessages.length > 0) {
-          setSelectedPatient(patientsWithMessages[0])
+      // Set up polling with a longer interval and debounce
+      interval = setInterval(() => {
+        // Only fetch if the component is mounted and visible
+        if (document.visibilityState === "visible") {
+          fetchConversations()
         }
-      } catch (error) {
-        console.error("Error fetching patients:", error)
-        toast({
-          title: "Error",
-          description: "Failed to load patients. Please try again later.",
-          variant: "destructive",
-        })
-      } finally {
-        setLoading(false)
+      }, 10000) // Poll every 10 seconds instead of 5
+
+      // Add event listener for visibility change
+      const handleVisibilityChange = () => {
+        if (document.visibilityState === "visible") {
+          fetchConversations() // Fetch immediately when tab becomes visible
+        }
+      }
+
+      document.addEventListener("visibilitychange", handleVisibilityChange)
+
+      return () => {
+        console.log("Cleaning up conversation polling")
+        if (interval) clearInterval(interval)
+        document.removeEventListener("visibilitychange", handleVisibilityChange)
       }
     }
 
-    fetchPatients()
-  }, [toast])
+    return () => {
+      console.log("Cleaning up when session is not available")
+      if (interval) clearInterval(interval)
+    }
+  }, [session?.user?.id])
 
   // Reset mobile view state when screen size changes
   useEffect(() => {
@@ -116,6 +154,61 @@ export default function MessagesPage() {
     )
   }
 
+  const handleStartChat = async (patient: Patient) => {
+    // Check if we already have a conversation with this patient
+    const existingPatient = patients.find((p) => p.id === patient.id)
+
+    if (existingPatient) {
+      // If we do, just select that patient
+      handlePatientSelect(existingPatient)
+    } else {
+      try {
+        // Create a conversation first to get the conversationId
+        const response = await fetch("/api/conversations", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            participantId: patient.id,
+          }),
+        })
+
+        if (!response.ok) {
+          throw new Error("Failed to create conversation")
+        }
+
+        const data = await response.json()
+
+        // Add the patient to our list with the new conversationId
+        const newPatient = {
+          ...patient,
+          lastMessage: "No messages yet",
+          lastMessageTime: "Just now",
+          unread: 0,
+          isPinned: false,
+          conversationId: data.conversationId,
+        }
+
+        setPatients((prev) => [...prev, newPatient])
+        setSelectedPatient(newPatient)
+
+        if (isMobile) {
+          setShowChatOnMobile(true)
+        }
+      } catch (error) {
+        console.error("Error creating conversation:", error)
+        toast({
+          title: "Error",
+          description: "Failed to start conversation. Please try again.",
+          variant: "destructive",
+        })
+      }
+    }
+
+    setIsStartChatModalOpen(false)
+  }
+
   // Filter patients based on search query and active tab
   const getFilteredPatients = () => {
     let filtered = patients
@@ -127,7 +220,7 @@ export default function MessagesPage() {
 
     // Apply tab filter
     if (activeTab === "unread") {
-      filtered = filtered.filter((patient) => patient.unread && patient.unread > 0)
+      filtered = filtered.filter((patient) => patient.unread > 0)
     }
 
     return filtered
@@ -167,6 +260,14 @@ export default function MessagesPage() {
                   onChange={(e) => setSearchQuery(e.target.value)}
                 />
               </div>
+
+              <Button
+                className="w-full mt-4 bg-[#006D5B] hover:bg-[#005A4B]"
+                onClick={() => setIsStartChatModalOpen(true)}
+              >
+                <Plus className="h-4 w-4 mr-2" />
+                Start New Chat
+              </Button>
             </Tabs>
           </div>
 
@@ -224,7 +325,7 @@ export default function MessagesPage() {
                         ? "No patients match your search"
                         : activeTab === "unread"
                           ? "No unread messages"
-                          : "No patients found"}
+                          : "No conversations yet. Start a new chat!"}
                     </div>
                   )}
                 </div>
@@ -246,12 +347,23 @@ export default function MessagesPage() {
               </div>
               <h2 className="text-2xl font-bold text-gray-800 mb-2">Your Messages</h2>
               <p className="text-gray-500 max-w-md">
-                Select a patient from the sidebar to view your conversation history and send messages.
+                Select a patient from the sidebar or start a new chat to begin messaging.
               </p>
+              <Button className="mt-6 bg-[#006D5B] hover:bg-[#005A4B]" onClick={() => setIsStartChatModalOpen(true)}>
+                <Plus className="h-4 w-4 mr-2" />
+                Start New Chat
+              </Button>
             </div>
           )}
         </div>
       )}
+
+      {/* Start Chat Modal */}
+      <StartChatModal
+        isOpen={isStartChatModalOpen}
+        onClose={() => setIsStartChatModalOpen(false)}
+        onSelectPatient={handleStartChat}
+      />
     </div>
   )
 }

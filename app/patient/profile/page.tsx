@@ -9,6 +9,9 @@ import Image from "next/image"
 import html2canvas from "html2canvas"
 import jsPDF from "jspdf"
 import "@/app/styles/card-flip.css"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { PatientPersonalInfo } from "@/components/patient/profile/PersonalInfo"
+import { PatientAccountSettings } from "@/components/patient/profile/AccountSettings"
 
 interface UserDetails {
   fullName: string
@@ -22,6 +25,9 @@ interface UserDetails {
   weight: string
   bloodGroup: string
   healthIdRegistered: boolean
+  email: string
+  address: string
+  fatherName?: string
 }
 
 export default function ProfilePage() {
@@ -30,6 +36,7 @@ export default function ProfilePage() {
   const [userDetails, setUserDetails] = useState<UserDetails | null>(null)
   const [showFront, setShowFront] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [activeTab, setActiveTab] = useState("id-card")
   const router = useRouter()
 
   useEffect(() => {
@@ -50,6 +57,21 @@ export default function ProfilePage() {
         })
     }
   }, [session])
+
+  const fetchUserDetails = async () => {
+    if (session?.user?.email) {
+      try {
+        const res = await fetch(`/api/user-details?email=${session.user.email}`)
+        const data = await res.json()
+        console.log("Refreshed user details:", data)
+        if (data && Object.keys(data).length > 0) {
+          setUserDetails(data)
+        }
+      } catch (err) {
+        console.error("Failed to refresh user details:", err)
+      }
+    }
+  }
 
   const handleDownload = async () => {
     setDownloading(true)
@@ -130,7 +152,20 @@ export default function ProfilePage() {
     )
   }
 
-  if (!userDetails || !userDetails.healthIdRegistered) {
+  if (!userDetails) {
+    return (
+      <div className="container mx-auto p-4">
+        <h1 className="text-2xl font-bold mb-4">Profile</h1>
+        <Card className="w-full max-w-md mx-auto">
+          <CardContent className="p-6">
+            <p className="text-center mb-4">Loading user details...</p>
+          </CardContent>
+        </Card>
+      </div>
+    )
+  }
+
+  if (!userDetails.healthIdRegistered) {
     return (
       <div className="container mx-auto p-4">
         <h1 className="text-2xl font-bold mb-4">Profile</h1>
@@ -147,89 +182,125 @@ export default function ProfilePage() {
   }
 
   return (
-    <div className="container mx-auto p-4">
-      <h1 className="text-2xl font-bold mb-4">Profile</h1>
-      <div className="flex flex-col items-center">
-        <div className="w-full max-w-md mx-auto mb-4 card-flip-container">
-          <div className={`card-flip ${showFront ? "" : "flipped"}`}>
-            <Card className="w-full card-face card-front" id="id-card-front">
-              <CardHeader className="text-center bg-primary/10">
-                <CardTitle>Health Buddy ID Card</CardTitle>
-              </CardHeader>
-              <CardContent className="flex flex-col items-center justify-center p-6">
-                <div className="w-24 h-24 rounded-full overflow-hidden mb-4">
-                  <Image
-                    src={userDetails?.profileImage || "/placeholder.svg"}
-                    alt="User Avatar"
-                    width={96}
-                    height={96}
-                    className="object-cover w-full h-full"
-                  />
-                </div>
-                <h2 className="text-xl font-semibold mb-2">{userDetails?.fullName || "N/A"}</h2>
-                <p className="text-gray-500 mb-4">ID: {userDetails?.healthBuddyUID || "N/A"}</p>
-              </CardContent>
-            </Card>
-            <Card className="w-full card-face card-back" id="id-card-back">
-              <CardHeader className="text-center bg-primary/10">
-                <CardTitle>Health Buddy ID Card</CardTitle>
-              </CardHeader>
-              <CardContent className="flex flex-col justify-center p-6">
-                <div className="grid grid-cols-2 gap-4 text-sm">
-                  <div className="space-y-2">
-                    <p>
-                      <strong>Phone:</strong>
-                    </p>
-                    <p>
-                      <strong>Date of Birth:</strong>
-                    </p>
-                    <p>
-                      <strong>Gender:</strong>
-                    </p>
-                  </div>
-                  <div className="space-y-2">
-                    <p>{userDetails.phoneNumber || "N/A"}</p>
-                    <p>
-                      {userDetails.dateOfBirth
-                        ? new Date(userDetails.dateOfBirth).toLocaleDateString("en-GB", {
-                            day: "2-digit",
-                            month: "2-digit",
-                            year: "numeric",
-                          })
-                        : "N/A"}
-                    </p>
-                    <p>{userDetails.gender || "N/A"}</p>
-                  </div>
-                  <div className="space-y-2">
-                    <p>
-                      <strong>Height:</strong>
-                    </p>
-                    <p>
-                      <strong>Weight:</strong>
-                    </p>
-                    <p>
-                      <strong>Blood Group:</strong>
-                    </p>
-                  </div>
-                  <div className="space-y-2">
-                    <p>{userDetails.height ? `${userDetails.height} cm` : "N/A"}</p>
-                    <p>{userDetails.weight ? `${userDetails.weight} kg` : "N/A"}</p>
-                    <p>{userDetails.bloodGroup || "N/A"}</p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-        </div>
-        <div className="flex flex-col sm:flex-row gap-4 w-full max-w-md">
-          <Button onClick={() => setShowFront(!showFront)} className="flex-1" variant="outline">
-            {showFront ? "Show Back" : "Show Front"}
-          </Button>
-          <Button onClick={handleDownload} disabled={downloading} className="flex-1">
-            {downloading ? "Downloading..." : "Download ID Card (PDF)"}
-          </Button>
-        </div>
+    <div className="container mx-auto p-4 space-y-6">
+      <div className="flex justify-between items-center mb-4">
+        <h1 className="text-2xl font-bold">Patient Profile</h1>
       </div>
+
+      <Tabs defaultValue="id-card" value={activeTab} onValueChange={setActiveTab} className="space-y-4">
+        <TabsList className="bg-white border-b w-full justify-start rounded-none h-auto p-0 overflow-x-auto flex-nowrap ">
+          <TabsTrigger
+            value="id-card"
+            className={`px-3 sm:px-6 py-3 rounded-none border-b-2 data-[state=active]:border-blue-500 data-[state=active]:text-blue-500 transition-none whitespace-nowrap text-sm sm:text-base flex-shrink-0`}
+          >
+            Health ID
+          </TabsTrigger>
+          <TabsTrigger
+            value="personal"
+            className={`px-3 sm:px-6 py-3 rounded-none border-b-2 data-[state=active]:border-blue-500 data-[state=active]:text-blue-500 transition-none whitespace-nowrap text-sm sm:text-base flex-shrink-0`}
+          >
+            Personal Info
+          </TabsTrigger>
+          <TabsTrigger
+            value="account"
+            className={`px-3 sm:px-6 py-3 rounded-none border-b-2 data-[state=active]:border-blue-500 data-[state=active]:text-blue-500 transition-none whitespace-nowrap text-sm sm:text-base flex-shrink-0`}
+          >
+            Account Settings
+          </TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="id-card" className="m-0">
+          <div className="flex flex-col items-center">
+            <div className="w-full max-w-md mx-auto mb-4 card-flip-container">
+              <div className={`card-flip ${showFront ? "" : "flipped"}`}>
+                <Card className="w-full card-face card-front" id="id-card-front">
+                  <CardHeader className="text-center bg-primary/10">
+                    <CardTitle>Health Buddy ID Card</CardTitle>
+                  </CardHeader>
+                  <CardContent className="flex flex-col items-center justify-center p-6">
+                    <div className="w-24 h-24 rounded-full overflow-hidden mb-4">
+                      <Image
+                        src={userDetails?.profileImage || "/placeholder.svg"}
+                        alt="User Avatar"
+                        width={96}
+                        height={96}
+                        className="object-cover w-full h-full"
+                      />
+                    </div>
+                    <h2 className="text-xl font-semibold mb-2">{userDetails?.fullName || "N/A"}</h2>
+                    <p className="text-gray-500 mb-4">ID: {userDetails?.healthBuddyUID || "N/A"}</p>
+                  </CardContent>
+                </Card>
+                <Card className="w-full card-face card-back" id="id-card-back">
+                  <CardHeader className="text-center bg-primary/10">
+                    <CardTitle>Health Buddy ID Card</CardTitle>
+                  </CardHeader>
+                  <CardContent className="flex flex-col justify-center p-6">
+                    <div className="grid grid-cols-2 gap-4 text-sm">
+                      <div className="space-y-2">
+                        <p>
+                          <strong>Phone:</strong>
+                        </p>
+                        <p>
+                          <strong>Date of Birth:</strong>
+                        </p>
+                        <p>
+                          <strong>Gender:</strong>
+                        </p>
+                      </div>
+                      <div className="space-y-2">
+                        <p>{userDetails.phoneNumber || "N/A"}</p>
+                        <p>
+                          {userDetails.dateOfBirth
+                            ? new Date(userDetails.dateOfBirth).toLocaleDateString("en-GB", {
+                                day: "2-digit",
+                                month: "2-digit",
+                                year: "numeric",
+                              })
+                            : "N/A"}
+                        </p>
+                        <p>{userDetails.gender || "N/A"}</p>
+                      </div>
+                      <div className="space-y-2">
+                        <p>
+                          <strong>Height:</strong>
+                        </p>
+                        <p>
+                          <strong>Weight:</strong>
+                        </p>
+                        <p>
+                          <strong>Blood Group:</strong>
+                        </p>
+                      </div>
+                      <div className="space-y-2">
+                        <p>{userDetails.height ? `${userDetails.height} cm` : "N/A"}</p>
+                        <p>{userDetails.weight ? `${userDetails.weight} kg` : "N/A"}</p>
+                        <p>{userDetails.bloodGroup || "N/A"}</p>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+            </div>
+            <div className="flex flex-col sm:flex-row gap-4 w-full max-w-md">
+              <Button onClick={() => setShowFront(!showFront)} className="flex-1" variant="outline">
+                {showFront ? "Show Back" : "Show Front"}
+              </Button>
+              <Button onClick={handleDownload} disabled={downloading} className="flex-1">
+                {downloading ? "Downloading..." : "Download ID Card (PDF)"}
+              </Button>
+            </div>
+          </div>
+        </TabsContent>
+
+        <TabsContent value="personal" className="m-0">
+          <PatientPersonalInfo userDetails={userDetails} onUpdate={fetchUserDetails} />
+        </TabsContent>
+
+        <TabsContent value="account" className="m-0">
+          <PatientAccountSettings />
+        </TabsContent>
+      </Tabs>
     </div>
   )
 }
