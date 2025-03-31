@@ -1,5 +1,7 @@
 "use client"
 
+import type React from "react"
+
 import { useState } from "react"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
@@ -141,7 +143,7 @@ export default function Analyzer() {
               </div>
             )}
             <div className="flex justify-between mt-4">
-              <Button onClick={handleSubmit} disabled={!selectedFile || isAnalyzing}>
+              <Button className="bg-[#1A75BC] hover:bg-blue-700" onClick={handleSubmit} disabled={!selectedFile || isAnalyzing}>
                 {isAnalyzing ? "Analyzing..." : "Submit"}
               </Button>
               <Button variant="outline" onClick={handleClear}>
@@ -165,7 +167,7 @@ export default function Analyzer() {
               </div>
             )}
             {analysis && (
-              <Button onClick={() => setShowSaveDialog(true)} className="mt-4">
+              <Button onClick={() => setShowSaveDialog(true)} className="mt-10 bg-[#1A75BC] hover:bg-blue-700">
                 Save to History
               </Button>
             )}
@@ -182,7 +184,7 @@ export default function Analyzer() {
           <Input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Enter title" className="mb-4" />
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={handleSave}>Save</AlertDialogAction>
+            <AlertDialogAction className="bg-[#1A75BC] hover:bg-blue-700" onClick={handleSave}>Save</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

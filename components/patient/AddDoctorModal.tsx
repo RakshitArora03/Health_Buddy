@@ -113,7 +113,7 @@ export function AddDoctorModal({ isOpen, onClose, onAddDoctor, doctors }: AddDoc
               onChange={(e) => setSearchQuery(e.target.value)}
               className="flex-grow"
             />
-            <Button onClick={handleSearch} disabled={isSearching}>
+            <Button className="bg-[#1A75BC] hover:bg-blue-700" onClick={handleSearch} disabled={isSearching}>
               <Search className="h-4 w-4 mr-2" />
               {isSearching ? "Searching..." : "Search"}
             </Button>
@@ -132,7 +132,7 @@ export function AddDoctorModal({ isOpen, onClose, onAddDoctor, doctors }: AddDoc
                       <p className="text-sm text-gray-500">{doctor.specialization}</p>
                     </div>
                   </div>
-                  <Button onClick={() => handleAddDoctor(doctor)}>Add</Button>
+                  <Button className="bg-[#1A75BC] hover:bg-blue-700" onClick={() => handleAddDoctor(doctor)}>Add</Button>
                 </div>
               ))}
             </div>

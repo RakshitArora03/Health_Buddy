@@ -262,7 +262,7 @@ export default function MessagesPage() {
               </div>
 
               <Button
-                className="w-full mt-4 bg-blue-500 hover:bg-blue-600"
+                className="w-full mt-4 bg-[#1A75BC] hover:bg-blue-700"
                 onClick={() => setIsStartChatModalOpen(true)}
               >
                 <Plus className="h-4 w-4 mr-2" />
@@ -349,7 +349,7 @@ export default function MessagesPage() {
               <p className="text-gray-500 max-w-md">
                 Select a doctor from the sidebar or start a new chat to begin messaging.
               </p>
-              <Button className="mt-6 bg-blue-500 hover:bg-blue-600" onClick={() => setIsStartChatModalOpen(true)}>
+              <Button className="mt-6 bg-[#1A75BC] hover:bg-blue-700" onClick={() => setIsStartChatModalOpen(true)}>
                 <Plus className="h-4 w-4 mr-2" />
                 Start New Chat
               </Button>

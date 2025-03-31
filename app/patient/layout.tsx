@@ -1,3 +1,4 @@
+import type React from "react"
 import Navbar from "@/components/patient/navbar"
 
 export default function PatientLayout({
@@ -6,11 +7,9 @@ export default function PatientLayout({
   children: React.ReactNode
 }) {
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen">
       <Navbar />
-      <main className="md:ml-64 min-h-screen">
-        {children}
-      </main>
+      <main className="md:ml-64 min-h-screen bg-gradient-to-tr from-[#DAF8FA] to-[#8FC4E3]">{children}</main>
     </div>
   )
 }

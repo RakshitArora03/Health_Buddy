@@ -113,7 +113,7 @@ export default function ProfilePage() {
 
         const pdf = new jsPDF("p", "mm", "a4")
         const pageWidth = pdf.internal.pageSize.getWidth()
-        const pageHeight = pdf.internal.pageSize.getHeight()
+        // const pageHeight = pdf.internal.pageSize.getHeight()
 
         // Add front side to PDF
         const frontImgWidth = pageWidth - 20
@@ -145,7 +145,7 @@ export default function ProfilePage() {
       <div className="container mx-auto p-4">
         <h1 className="text-2xl font-bold mb-4">Profile</h1>
         <p className="text-red-500">{error}</p>
-        <Button onClick={() => window.location.reload()} className="mt-4">
+        <Button onClick={() => window.location.reload()} className="mt-4 bg-[#1A75BC] hover:bg-blue-700">
           Retry
         </Button>
       </div>
@@ -171,8 +171,8 @@ export default function ProfilePage() {
         <h1 className="text-2xl font-bold mb-4">Profile</h1>
         <Card className="w-full max-w-md mx-auto">
           <CardContent className="p-6">
-            <p className="text-center mb-4">You haven't registered your Health ID yet.</p>
-            <Button onClick={() => router.push("/patient/health-id-registration")} className="w-full">
+            <p className="text-center mb-4">You haven&apos;t registered your Health ID yet.</p>
+            <Button onClick={() => router.push("/patient/health-id-registration")} className="w-full bg-[#1A75BC] hover:bg-blue-700">
               Register Health ID
             </Button>
           </CardContent>
@@ -213,7 +213,7 @@ export default function ProfilePage() {
           <div className="flex flex-col items-center">
             <div className="w-full max-w-md mx-auto mb-4 card-flip-container">
               <div className={`card-flip ${showFront ? "" : "flipped"}`}>
-                <Card className="w-full card-face card-front" id="id-card-front">
+                <Card className="w-full card-face card-front " id="id-card-front">
                   <CardHeader className="text-center bg-primary/10">
                     <CardTitle>Health Buddy ID Card</CardTitle>
                   </CardHeader>
@@ -286,7 +286,7 @@ export default function ProfilePage() {
               <Button onClick={() => setShowFront(!showFront)} className="flex-1" variant="outline">
                 {showFront ? "Show Back" : "Show Front"}
               </Button>
-              <Button onClick={handleDownload} disabled={downloading} className="flex-1">
+              <Button onClick={handleDownload} disabled={downloading} className="flex-1 bg-[#1A75BC] hover:bg-blue-700">
                 {downloading ? "Downloading..." : "Download ID Card (PDF)"}
               </Button>
             </div>

@@ -77,7 +77,7 @@ export default function DoctorsPage() {
             <Filter className="h-4 w-4" />
             Filter
           </Button>
-          <Button className="flex gap-2 bg-[#006D5B] hover:bg-[#005c4d]" onClick={() => setIsAddDoctorModalOpen(true)}>
+          <Button className="flex gap-2 bg-[#1A75BC] hover:bg-blue-700" onClick={() => setIsAddDoctorModalOpen(true)}>
             <Plus className="h-4 w-4" />
             Add Doctor
           </Button>
@@ -97,7 +97,7 @@ export default function DoctorsPage() {
                   <p className="text-gray-500">{doctor.specialization}</p>
                 </div>
               </div>
-              <Button className="w-full mt-4" onClick={() => router.push(`/patient/doctors/${doctor.id}`)}>
+              <Button className="w-full mt-4 bg-[#1A75BC] hover:bg-blue-700" onClick={() => router.push(`/patient/doctors/${doctor.id}`)}>
                 View
               </Button>
             </CardContent>

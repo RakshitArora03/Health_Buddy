@@ -64,7 +64,7 @@ export function EPrescriptions() {
                 <p className="text-gray-500 mb-2">{format(new Date(prescription.date), "PPP")}</p>
                 <p className="text-gray-600">{prescription.medicines.length} medicine(s) prescribed</p>
               </div>
-              <Button className="w-full mt-4" onClick={() => setSelectedPrescription(prescription)}>
+              <Button className="w-full mt-4 bg-[#1A75BC] hover:bg-blue-700" onClick={() => setSelectedPrescription(prescription)}>
                 View Details
               </Button>
             </CardContent>

@@ -74,19 +74,19 @@ export default function DoctorDetailsPage() {
         <TabsList className="bg-white border-b w-full justify-start rounded-none h-auto p-0">
           <TabsTrigger
             value="info"
-            className={`px-6 py-3 rounded-none border-b-2 data-[state=active]:border-[#006D5B] data-[state=active]:text-[#006D5B] transition-none`}
+            className={`px-6 py-3 rounded-none border-b-2 data-[state=active]:border-blue-500 data-[state=active]:text-blue-500 transition-none whitespace-nowrap text-sm sm:text-base flex-shrink-0`}
           >
             Doctor Info
           </TabsTrigger>
           <TabsTrigger
             value="visits"
-            className={`px-6 py-3 rounded-none border-b-2 data-[state=active]:border-[#006D5B] data-[state=active]:text-[#006D5B] transition-none`}
+            className={`px-6 py-3 rounded-none border-b-2 data-[state=active]:border-blue-500 data-[state=active]:text-blue-500 transition-none whitespace-nowrap text-sm sm:text-base flex-shrink-0`}
           >
             Visits
           </TabsTrigger>
           <TabsTrigger
-            value="prescriptions"
-            className={`px-6 py-3 rounded-none border-b-2 data-[state=active]:border-[#006D5B] data-[state=active]:text-[#006D5B] transition-none`}
+            value="prescriptions" 
+            className={`px-6 py-3 rounded-none border-b-2 data-[state=active]:border-blue-500 data-[state=active]:text-blue-500 transition-none whitespace-nowrap text-sm sm:text-base flex-shrink-0`}
           >
             Prescriptions
           </TabsTrigger>

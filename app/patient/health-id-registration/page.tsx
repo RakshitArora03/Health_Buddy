@@ -86,11 +86,15 @@ export default function HealthIDRegistration() {
   }
 
   if (!session) {
-    router.push("/login")
+    router.push("/")
     return null
   }
 
   return (
+    <div className="p-8">
+
+    <h2 className="text-2xl font-bold mb-8 text-gray-900">HEALTH ID REGISTRATION FORM</h2>
+
     <div className="container mx-auto p-4">
       <Card className="w-full max-w-2xl mx-auto">
         <CardHeader>
@@ -216,12 +220,13 @@ export default function HealthIDRegistration() {
                 I agree to share my information for the purpose of Health ID registration
               </label>
             </div>
-            <Button type="submit" className="w-full" disabled={!consentGiven}>
+            <Button type="submit" className="w-full bg-[#1A75BC] hover:bg-blue-700" disabled={!consentGiven}>
               Register Health ID
             </Button>
           </form>
         </CardContent>
       </Card>
+      </div>
     </div>
   )
 }

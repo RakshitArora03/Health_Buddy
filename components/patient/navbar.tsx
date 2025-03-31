@@ -14,6 +14,8 @@ import {
   UserIcon as UserMd,
   FileText,
   MessageSquare,
+  Clipboard,
+  Calendar,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import {
@@ -32,7 +34,6 @@ import { signOut, useSession } from "next-auth/react"
 
 export default function Navbar() {
   const [showLogoutDialog, setShowLogoutDialog] = useState<boolean>(false)
-  const [showRegistrationDialog, setShowRegistrationDialog] = useState<boolean>(false)
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState<boolean>(false)
   const [userDetails, setUserDetails] = useState<any>(null)
   const pathname = usePathname()
@@ -56,13 +57,6 @@ export default function Navbar() {
     router.push("/")
   }
 
-  const handleHealthIdRegistrationClick = (e: React.MouseEvent) => {
-    if (userDetails?.healthIdRegistered) {
-      e.preventDefault()
-      setShowRegistrationDialog(true)
-    }
-  }
-
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const NavLink = ({
     href,
@@ -72,7 +66,7 @@ export default function Navbar() {
   }: { href: string; icon: any; children: React.ReactNode; onClick?: (e: React.MouseEvent) => void }) => (
     <Button
       variant={pathname === href ? "secondary" : "ghost"}
-      className={`w-full justify-start ${pathname === href ? "bg-gray-300 text-black" : "text-gray-300 hover:bg-gray-300 hover:text-black"}`}
+      className={`w-full justify-start ${pathname === href ? "bg-white text-[#1A75BC]" : "text-white hover:bg-white hover:text-[#1A75BC]"}`}
       asChild
       onClick={(e) => {
         setIsMobileMenuOpen(false)
@@ -88,7 +82,7 @@ export default function Navbar() {
 
   return (
     <>
-      <nav className="bg-gray-900 text-white">
+      <nav className="bg-[#1A75BC] text-white">
         {/* Mobile menu button */}
         <div className="md:hidden flex justify-between items-center p-4">
           <h1 className="text-2xl font-bold">HEALTH BUDDY</h1>
@@ -98,7 +92,7 @@ export default function Navbar() {
         </div>
 
         {/* Desktop sidebar */}
-        <aside className="hidden md:block fixed h-full w-64 p-4 overflow-y-auto bg-gray-900">
+        <aside className="hidden md:block fixed h-full w-64 p-4 overflow-y-auto bg-[#1A75BC]">
           <h1 className="text-2xl font-bold mb-8 pt-4">HEALTH BUDDY</h1>
           <nav className="space-y-4">
             <NavLink href="/patient/dashboard" icon={Home}>
@@ -119,13 +113,21 @@ export default function Navbar() {
             <NavLink href="/patient/messages" icon={MessageSquare}>
               Messages
             </NavLink>
-            <NavLink href="/patient/health-id-registration" icon={UserPlus} onClick={handleHealthIdRegistrationClick}>
-              Health ID Registration
+            <NavLink href="/patient/appointments" icon={Calendar}>
+              Appointments
             </NavLink>
+            <NavLink href="/patient/notes" icon={Clipboard}>
+              Notes
+            </NavLink>
+            {!userDetails?.healthIdRegistered && (
+              <NavLink href="/patient/health-id-registration" icon={UserPlus}>
+                Health ID Registration
+              </NavLink>
+            )}
           </nav>
           <Button
             variant="ghost"
-            className="w-full justify-start mt-8 text-gray-300 hover:bg-gray-300 hover:text-black"
+            className="w-full justify-start mt-8 text-white hover:bg-white hover:text-[#1A75BC]"
             onClick={() => setShowLogoutDialog(true)}
           >
             <LogOut className="mr-2 h-4 w-4" />
@@ -135,7 +137,7 @@ export default function Navbar() {
 
         {/* Mobile menu */}
         {isMobileMenuOpen && (
-          <div className="md:hidden fixed inset-0 bg-gray-900 z-50">
+          <div className="md:hidden fixed inset-0 bg-[#1A75BC] z-50">
             <div className="flex justify-between items-center p-4">
               <h1 className="text-2xl font-bold">HEALTH BUDDY</h1>
               <Button variant="ghost" size="icon" onClick={() => setIsMobileMenuOpen(false)}>
@@ -161,12 +163,20 @@ export default function Navbar() {
               <NavLink href="/patient/messages" icon={MessageSquare}>
                 Messages
               </NavLink>
-              <NavLink href="/patient/health-id-registration" icon={UserPlus} onClick={handleHealthIdRegistrationClick}>
-                Health ID Registration
+              <NavLink href="/patient/appointments" icon={Calendar}>
+                Appointments
               </NavLink>
+              <NavLink href="/patient/notes" icon={Clipboard}>
+                Notes
+              </NavLink>
+              {!userDetails?.healthIdRegistered && (
+                <NavLink href="/patient/health-id-registration" icon={UserPlus}>
+                  Health ID Registration
+                </NavLink>
+              )}
               <Button
                 variant="ghost"
-                className="w-full justify-start text-gray-300 hover:bg-gray-300 hover:text-black"
+                className="w-full justify-start text-white hover:bg-white hover:text-[#1A75BC]"
                 onClick={() => {
                   setIsMobileMenuOpen(false)
                   setShowLogoutDialog(true)
@@ -189,35 +199,8 @@ export default function Navbar() {
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={handleLogout}>Logout</AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-
-      {/* Health ID Registration Dialog */}
-      <AlertDialog open={showRegistrationDialog} onOpenChange={setShowRegistrationDialog}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>{userDetails?.fullName} is already registered</AlertDialogTitle>
-            <AlertDialogDescription>What would you like to do?</AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel asChild>
-              <Button
-                variant="outline"
-                onClick={() => router.push("/patient/profile")}
-                className="bg-white text-black border-gray-300 hover:bg-gray-100 hover:text-black"
-              >
-                Go to Profile
-              </Button>
-            </AlertDialogCancel>
-            <AlertDialogAction asChild>
-              <Button
-                onClick={() => router.push("/patient/health-id-registration")}
-                className="bg-primary text-primary-foreground hover:bg-primary/90"
-              >
-                Register Another User
-              </Button>
+            <AlertDialogAction className="bg-red-600 hover:bg-red-400" onClick={handleLogout}>
+              Logout
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

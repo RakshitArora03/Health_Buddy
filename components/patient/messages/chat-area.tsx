@@ -415,7 +415,7 @@ export default function ChatArea({ doctor, onBack }: ChatAreaProps) {
           <Button
             onClick={handleSendMessage}
             disabled={message.trim() === ""}
-            className="bg-blue-500 hover:bg-blue-600"
+            className="bg-[#1A75BC] hover:bg-blue-700"
           >
             <Send className="h-5 w-5" />
           </Button>

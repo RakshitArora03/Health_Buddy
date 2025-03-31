@@ -108,7 +108,7 @@ export function PatientAccountSettings() {
                 </p>
               )}
             </div>
-            <Button type="submit" className="w-full" disabled={isChangingPassword}>
+            <Button type="submit" className="w-full bg-[#1A75BC] hover:bg-blue-700" disabled={isChangingPassword}>
               {isChangingPassword ? "Changing Password..." : "Change Password"}
             </Button>
           </form>

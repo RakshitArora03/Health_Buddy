@@ -132,7 +132,7 @@ export default function StartChatModal({ isOpen, onClose, onSelectDoctor }: Star
                   <h4 className="font-medium">{doctor.name}</h4>
                   <p className="text-sm text-gray-500">{doctor.specialization}</p>
                 </div>
-                <Button size="sm" className="bg-blue-500 hover:bg-blue-600">
+                <Button size="sm" className="bg-[#1A75BC] hover:bg-blue-700">
                   Chat
                 </Button>
               </div>
@@ -147,7 +147,7 @@ export default function StartChatModal({ isOpen, onClose, onSelectDoctor }: Star
               </p>
               {!searchQuery && (
                 <Button
-                  className="mt-4 bg-blue-500 hover:bg-blue-600"
+                  className="mt-4 bg-[#1A75BC] hover:bg-blue-700"
                   onClick={() => {
                     onClose()
                     window.location.href = "/patient/doctors"

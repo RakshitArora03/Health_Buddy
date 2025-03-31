@@ -251,10 +251,10 @@ export function AnalyzedPrescriptions() {
                 </DialogDescription>
               </DialogHeader>
               <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="relative w-full h-[300px] bg-gray-100 rounded-lg overflow-hidden">
+                <div className="relative w-full h-[500px] bg-gray-100 rounded-lg overflow-hidden">
                   {selectedAnalysis?.image ? (
                     <Image
-                      src={selectedAnalysis.image || "/placeholder.svg"}
+                      src={selectedAnalysis.image || "/assets/images/Image-Placeholder.png"}
                       alt="Prescription"
                       layout="fill"
                       objectFit="contain"

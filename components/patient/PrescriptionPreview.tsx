@@ -1,5 +1,5 @@
 import Image from "next/image"
-import { Card } from "@/components/ui/card"
+// import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { format } from "date-fns"
 import { useState } from "react"
@@ -130,7 +130,7 @@ export function PrescriptionPreview({ prescription }: PrescriptionPreviewProps) 
         </div>
       </div>
       <div className="flex justify-center">
-        <Button onClick={handleDownload} disabled={isDownloading}>
+        <Button className="bg-[#1A75BC] hover:bg-blue-700" onClick={handleDownload} disabled={isDownloading}>
           {isDownloading ? "Generating PDF..." : "Download Prescription"}
         </Button>
       </div>
