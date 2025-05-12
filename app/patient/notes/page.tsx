@@ -168,7 +168,7 @@ export default function NotesPage() {
   const unpinnedNotes = filteredNotes.filter((note) => !note.isPinned)
 
   if (!session) {
-    router.push("/login")
+    router.push("/")
     return null
   }
 

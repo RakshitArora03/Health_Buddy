@@ -1,6 +1,8 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import type React from "react"
+
+import { useState } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import Link from "next/link"
 import { signIn } from "next-auth/react"
@@ -17,15 +19,10 @@ export default function LoginPage() {
     email: "",
     password: "",
   })
-  const [isClient, setIsClient] = useState(false)
 
   const router = useRouter()
   const searchParams = useSearchParams()
   const userType = searchParams.get("userType") || "patient"
-
-  useEffect(() => {
-    setIsClient(true)
-  }, [])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -58,10 +55,6 @@ export default function LoginPage() {
       ...prev,
       [e.target.name]: e.target.value,
     }))
-  }
-
-  if (!isClient) {
-    return null // or a loading spinner
   }
 
   return (
@@ -112,16 +105,21 @@ export default function LoginPage() {
         <Button
           variant="outline"
           className="w-full"
-          onClick={() =>
+          onClick={() => {
+            const state = encodeURIComponent(JSON.stringify({ userType }))
             signIn("google", {
               callbackUrl: userType === "doctor" ? "/doctor/dashboard" : "/patient/dashboard",
-              userType: userType,
+              state,
             })
-          }
+          }}
           disabled={isLoading}
         >
           <FaGoogle className="mr-2" />
           Sign in with Google
+        </Button>
+
+        <Button className="w-full mt-2" onClick={() => router.push("/")} disabled={isLoading}>
+          Change User Type
         </Button>
 
         <p className="mt-4 text-center text-sm text-muted-foreground">

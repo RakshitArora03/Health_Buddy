@@ -9,7 +9,6 @@ import {
   Search,
   LogOut,
   Menu,
-  X,
   UserPlus,
   UserIcon as UserMd,
   FileText,
@@ -31,6 +30,8 @@ import {
 import Link from "next/link"
 import { usePathname, useRouter } from "next/navigation"
 import { signOut, useSession } from "next-auth/react"
+import Image from "next/image"
+import { Sheet, SheetContent, SheetTrigger, SheetTitle } from "@/components/ui/sheet"
 
 export default function Navbar() {
   const [showLogoutDialog, setShowLogoutDialog] = useState<boolean>(false)
@@ -39,6 +40,7 @@ export default function Navbar() {
   const pathname = usePathname()
   const router = useRouter()
   const { data: session } = useSession()
+  const [isSheetOpen, setIsSheetOpen] = useState(false)
 
   useEffect(() => {
     if (session?.user?.email) {
@@ -69,6 +71,7 @@ export default function Navbar() {
       className={`w-full justify-start ${pathname === href ? "bg-white text-[#1A75BC]" : "text-white hover:bg-white hover:text-[#1A75BC]"}`}
       asChild
       onClick={(e) => {
+        setIsSheetOpen(false) // Close the sheet when a link is clicked
         setIsMobileMenuOpen(false)
         onClick && onClick(e)
       }}
@@ -84,16 +87,80 @@ export default function Navbar() {
     <>
       <nav className="bg-[#1A75BC] text-white">
         {/* Mobile menu button */}
-        <div className="md:hidden flex justify-between items-center p-4">
-          <h1 className="text-2xl font-bold">HEALTH BUDDY</h1>
-          <Button variant="ghost" size="icon" onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}>
-            {isMobileMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
-          </Button>
+        {/* Mobile navbar */}
+        <div className="md:hidden flex justify-between items-center p-4 bg-[#1A75BC] text-white">
+          <div className="space-y-1 flex">
+            <Image src="/assets/images/HEALTH BUDDY LOGO.png" alt="Health Buddy" width={40} height={40} />
+            <span className="font-bold text-2xl text-white">HEALTH BUDDY</span>
+          </div>
+          <div>
+            <Sheet open={isSheetOpen} onOpenChange={setIsSheetOpen}>
+              <SheetTrigger asChild>
+                <Button variant="ghost" size="icon" onClick={() => setIsSheetOpen(true)}>
+                  <Menu className="h-6 w-6" />
+                </Button>
+              </SheetTrigger>
+              <SheetContent side="left" className="w-[260px] sm:w-[300px] bg-[#1A75BC] text-white">
+                <SheetTitle asChild>
+                  <div className="flex flex-col items-center space-y-2 px-2 mb-8">
+                    <Image src="/assets/images/HEALTH BUDDY LOGO.png" alt="Health Buddy" width={60} height={60} />
+                    <span className="font-bold text-lg text-white">HEALTH BUDDY</span>
+                  </div>
+                </SheetTitle>
+                <nav className="space-y-2 px-4">
+                  <NavLink href="/patient/dashboard" icon={Home}>
+                    Home
+                  </NavLink>
+                  <NavLink href="/patient/profile" icon={User}>
+                    Profile
+                  </NavLink>
+                  <NavLink href="/patient/doctors" icon={UserMd}>
+                    Doctors
+                  </NavLink>
+                  <NavLink href="/patient/analyzer" icon={Search}>
+                    Analyzer
+                  </NavLink>
+                  <NavLink href="/patient/prescriptions" icon={FileText}>
+                    Prescriptions
+                  </NavLink>
+                  <NavLink href="/patient/messages" icon={MessageSquare}>
+                    Messages
+                  </NavLink>
+                  <NavLink href="/patient/appointments" icon={Calendar}>
+                    Appointments
+                  </NavLink>
+                  <NavLink href="/patient/notes" icon={Clipboard}>
+                    Notes
+                  </NavLink>
+                  {!userDetails?.healthIdRegistered && (
+                    <NavLink href="/patient/health-id-registration" icon={UserPlus}>
+                      Health ID Registration
+                    </NavLink>
+                  )}
+                  <Button
+                    variant="ghost"
+                    className="w-full justify-start text-white hover:bg-white hover:text-[#1A75BC]"
+                    onClick={(e) => {
+                      e.preventDefault()
+                      setIsSheetOpen(false) // Close the sheet
+                      setShowLogoutDialog(true)
+                    }}
+                  >
+                    <LogOut className="mr-2 h-4 w-4" />
+                    <span className="ml-2">Logout</span>
+                  </Button>
+                </nav>
+              </SheetContent>
+            </Sheet>
+          </div>
         </div>
 
         {/* Desktop sidebar */}
         <aside className="hidden md:block fixed h-full w-64 p-4 overflow-y-auto bg-[#1A75BC]">
-          <h1 className="text-2xl font-bold mb-8 pt-4">HEALTH BUDDY</h1>
+          <div className="flex flex-col items-center space-y-2 px-6 mb-8">
+            <Image src="/assets/images/HEALTH BUDDY LOGO.png" alt="Health Buddy" width={60} height={60} />
+            <span className="font-bold text-xl">HEALTH BUDDY</span>
+          </div>
           <nav className="space-y-4">
             <NavLink href="/patient/dashboard" icon={Home}>
               Home
@@ -136,58 +203,6 @@ export default function Navbar() {
         </aside>
 
         {/* Mobile menu */}
-        {isMobileMenuOpen && (
-          <div className="md:hidden fixed inset-0 bg-[#1A75BC] z-50">
-            <div className="flex justify-between items-center p-4">
-              <h1 className="text-2xl font-bold">HEALTH BUDDY</h1>
-              <Button variant="ghost" size="icon" onClick={() => setIsMobileMenuOpen(false)}>
-                <X className="h-6 w-6" />
-              </Button>
-            </div>
-            <nav className="space-y-4 p-4">
-              <NavLink href="/patient/dashboard" icon={Home}>
-                Home
-              </NavLink>
-              <NavLink href="/patient/profile" icon={User}>
-                Profile
-              </NavLink>
-              <NavLink href="/patient/doctors" icon={UserMd}>
-                Doctors
-              </NavLink>
-              <NavLink href="/patient/analyzer" icon={Search}>
-                Analyzer
-              </NavLink>
-              <NavLink href="/patient/prescriptions" icon={FileText}>
-                Prescriptions
-              </NavLink>
-              <NavLink href="/patient/messages" icon={MessageSquare}>
-                Messages
-              </NavLink>
-              <NavLink href="/patient/appointments" icon={Calendar}>
-                Appointments
-              </NavLink>
-              <NavLink href="/patient/notes" icon={Clipboard}>
-                Notes
-              </NavLink>
-              {!userDetails?.healthIdRegistered && (
-                <NavLink href="/patient/health-id-registration" icon={UserPlus}>
-                  Health ID Registration
-                </NavLink>
-              )}
-              <Button
-                variant="ghost"
-                className="w-full justify-start text-white hover:bg-white hover:text-[#1A75BC]"
-                onClick={() => {
-                  setIsMobileMenuOpen(false)
-                  setShowLogoutDialog(true)
-                }}
-              >
-                <LogOut className="mr-2 h-4 w-4" />
-                Logout
-              </Button>
-            </nav>
-          </div>
-        )}
       </nav>
 
       {/* Logout Confirmation Dialog */}

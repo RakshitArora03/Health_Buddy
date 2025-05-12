@@ -5,7 +5,7 @@ import { Providers } from './providers'
 const inter = Inter({ subsets: ["latin"] })
 
 export const metadata = {
-  title: "Health Buddy - Medical ePrescription Platform",
+  title: "Health Portal - Medical ePrescription Platform",
   description: "A modern medical ePrescription platform for doctors and patients",
 }
 

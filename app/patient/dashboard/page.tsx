@@ -7,14 +7,24 @@ import { useSession } from "next-auth/react"
 import Image from "next/image"
 import Link from "next/link"
 import { Card } from "@/components/ui/card"
-import { HomeIcon as House, User, Calendar, FileText, FileCheck, Clipboard } from "lucide-react"
+import { HomeIcon as House, User, Calendar, FileText, FileCheck, Clipboard, Clock, MapPin, Video } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { useRouter } from "next/navigation"
 import AddNoteModal from "@/components/patient/AddNoteModal"
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from "@/components/ui/dialog"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { PrescriptionPreview } from "@/components/patient/PrescriptionPreview"
 import { format } from "date-fns"
+import { Badge } from "@/components/ui/badge"
+import { AppointmentDetailsModal } from "@/components/patient/appointments/appointment-details-modal"
+import { useToast } from "@/components/ui/use-toast"
 
 interface Doctor {
   id: string
@@ -70,6 +80,12 @@ export default function PatientDashboard() {
   const [selectedNote, setSelectedNote] = useState<any>(null)
   const [selectedPrescription, setSelectedPrescription] = useState<any>(null)
   const [selectedAnalysis, setSelectedAnalysis] = useState<any>(null)
+  const [appointments, setAppointments] = useState<any[]>([])
+  const [loadingAppointments, setLoadingAppointments] = useState(true)
+  const [selectedAppointment, setSelectedAppointment] = useState<any | null>(null)
+  const [isCancelDialogOpen, setIsCancelDialogOpen] = useState(false)
+  const [appointmentToCancel, setAppointmentToCancel] = useState<any | null>(null)
+  const { toast } = useToast()
 
   // Fetch patient details
   useEffect(() => {
@@ -119,6 +135,48 @@ export default function PatientDashboard() {
 
     if (session?.user?.id) {
       fetchDoctors()
+    }
+  }, [session])
+
+  // Fetch appointments
+  const fetchAppointments = async () => {
+    try {
+      setLoadingAppointments(true)
+      const response = await fetch("/api/appointments")
+      if (response.ok) {
+        const data = await response.json()
+
+        // Filter upcoming appointments
+        const today = new Date()
+        const upcomingAppointments = data
+          .filter((appointment: any) => {
+            const appointmentDate = new Date(appointment.date)
+            return appointmentDate >= today && (appointment.status === "confirmed" || appointment.status === "pending")
+          })
+          .sort((a: any, b: any) => {
+            // Sort by date and time
+            const dateA = new Date(a.date)
+            const dateB = new Date(b.date)
+            if (dateA.getTime() !== dateB.getTime()) {
+              return dateA.getTime() - dateB.getTime()
+            }
+            return a.time.localeCompare(b.time)
+          })
+
+        setAppointments(upcomingAppointments)
+      } else {
+        console.error("Failed to fetch appointments")
+      }
+    } catch (error) {
+      console.error("Error fetching appointments:", error)
+    } finally {
+      setLoadingAppointments(false)
+    }
+  }
+
+  useEffect(() => {
+    if (session?.user?.email) {
+      fetchAppointments()
     }
   }, [session])
 
@@ -204,9 +262,6 @@ export default function PatientDashboard() {
   const currentDate = new Date()
   const days = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"]
 
-  // Empty appointments array - will be populated with real data later
-  const appointments: any[] = []
-
   const SectionHeader = ({ title, children, href }: { title: string; children?: React.ReactNode; href: string }) => (
     <div className="bg-[#1A75BC] text-white p-4 rounded-lg mb-2 flex justify-between items-center">
       <Link href={href} className="text-xl font-semibold hover:underline">
@@ -275,6 +330,84 @@ export default function PatientDashboard() {
         </div>
       </div>
     ))
+  }
+
+  // Function to render status badge with appropriate color
+  const renderStatusBadge = (status: string) => {
+    switch (status) {
+      case "confirmed":
+        return <Badge className="bg-green-500">Confirmed</Badge>
+      case "pending":
+        return <Badge className="bg-yellow-500">Pending</Badge>
+      case "completed":
+        return <Badge className="bg-blue-500">Completed</Badge>
+      case "cancelled":
+        return <Badge className="bg-red-500">Cancelled</Badge>
+      default:
+        return <Badge>{status}</Badge>
+    }
+  }
+
+  // Function to handle appointment actions
+  const handleReschedule = (appointmentId: string) => {
+    // Logic to handle reschedule
+    console.log("Reschedule appointment:", appointmentId)
+  }
+
+  const handleCancelConfirmation = (appointment: any) => {
+    setAppointmentToCancel(appointment)
+    setIsCancelDialogOpen(true)
+  }
+
+  const handleCancelAppointment = async () => {
+    if (!appointmentToCancel) return
+
+    try {
+      const response = await fetch(`/api/appointments/${appointmentToCancel._id}`, {
+        method: "DELETE",
+      })
+
+      if (response.ok) {
+        // Update the appointment status locally
+        setAppointments(appointments.filter((app) => app._id !== appointmentToCancel._id))
+
+        toast({
+          title: "Appointment Cancelled",
+          description: `Your appointment with Dr. ${appointmentToCancel.doctorName} has been cancelled successfully.`,
+        })
+
+        // Close the dialog
+        setIsCancelDialogOpen(false)
+        setAppointmentToCancel(null)
+
+        // If the appointment details modal is open, close it
+        if (selectedAppointment && selectedAppointment._id === appointmentToCancel._id) {
+          setSelectedAppointment(null)
+        }
+
+        // Refresh appointments
+        fetchAppointments()
+      } else {
+        const errorData = await response.json()
+        toast({
+          title: "Error",
+          description: errorData.error || "Failed to cancel appointment",
+          variant: "destructive",
+        })
+      }
+    } catch (error) {
+      console.error("Error cancelling appointment:", error)
+      toast({
+        title: "Error",
+        description: "An unexpected error occurred. Please try again.",
+        variant: "destructive",
+      })
+    }
+  }
+
+  const handleJoinCall = (appointmentId: string) => {
+    // Logic to join video call
+    console.log("Join call for appointment:", appointmentId)
   }
 
   return (
@@ -652,40 +785,103 @@ export default function PatientDashboard() {
             {/* Upcoming Appointments */}
             <div>
               <SectionHeader title="Upcoming Appointments" href="/patient/appointments">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="bg-white text-[#1A75BC] border-[#1A75BC] hover:bg-[#1A75BC] hover:text-white transition-colors"
-                >
-                  Schedule
-                </Button>
+                <Link href="/patient/appointments">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="bg-white text-[#1A75BC] border-[#1A75BC] hover:bg-[#1A75BC] hover:text-white transition-colors"
+                  >
+                    Schedule
+                  </Button>
+                </Link>
               </SectionHeader>
               <Card className="p-4">
-                {appointments.length > 0 ? (
+                {loadingAppointments ? (
+                  <div className="text-center py-8">
+                    <p className="text-gray-500">Loading appointments...</p>
+                  </div>
+                ) : appointments.length > 0 ? (
                   <div className="space-y-3">
-                    {appointments.map((appointment) => (
+                    {appointments.slice(0, 2).map((appointment) => (
                       <div
-                        key={appointment.id}
-                        className="p-3 rounded-lg flex justify-between items-center bg-blue-50 border border-blue-100"
+                        key={appointment._id}
+                        className="p-3 rounded-lg bg-blue-50 border border-blue-100 cursor-pointer hover:bg-blue-100 transition-colors"
+                        onClick={() => setSelectedAppointment(appointment)}
                       >
-                        <div className="flex items-center">
-                          <div className="w-10 h-10 rounded-full bg-blue-200 flex items-center justify-center mr-3">
-                            <Calendar className="w-5 h-5 text-blue-700" />
-                          </div>
+                        <div className="flex justify-between items-start">
                           <div>
-                            <p className="font-medium">{appointment.doctorName}</p>
-                            <p className="text-sm text-gray-600">
-                              {new Date(appointment.date).toLocaleDateString()} at {appointment.time}
-                            </p>
+                            <h3 className="font-medium">{appointment.doctorName}</h3>
+                            <p className="text-sm text-gray-600">{appointment.doctorSpecialty}</p>
+                          </div>
+                          {renderStatusBadge(appointment.status)}
+                        </div>
+                        <div className="mt-2">
+                          <div className="flex items-center text-sm text-gray-600 mt-1">
+                            <Calendar className="h-4 w-4 mr-1" />
+                            <span>{format(new Date(appointment.date), "MMMM d, yyyy")}</span>
+                          </div>
+                          <div className="flex items-center text-sm text-gray-600 mt-1">
+                            <Clock className="h-4 w-4 mr-1" />
+                            <span>{appointment.time}</span>
+                          </div>
+                          <div className="flex items-center text-sm text-gray-600 mt-1">
+                            <MapPin className="h-4 w-4 mr-1" />
+                            <span>{appointment.type === "online" ? "Online Consultation" : "In-Person Visit"}</span>
                           </div>
                         </div>
+                        {appointment.status === "confirmed" && appointment.type === "online" && (
+                          <div className="mt-2">
+                            <Button
+                              size="sm"
+                              className="bg-[#1A75BC] hover:bg-blue-700"
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                handleJoinCall(appointment._id)
+                              }}
+                            >
+                              <Video className="h-4 w-4 mr-2" />
+                              Join Call
+                            </Button>
+                          </div>
+                        )}
+                        {appointment.status === "confirmed" && (
+                          <div className="mt-2">
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              className="text-red-600 border-red-300 hover:bg-red-50"
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                handleCancelConfirmation(appointment)
+                              }}
+                            >
+                              Cancel Appointment
+                            </Button>
+                          </div>
+                        )}
                       </div>
                     ))}
+                    {appointments.length > 2 && (
+                      <div className="text-center mt-2">
+                        <Button
+                          variant="link"
+                          className="text-[#1A75BC]"
+                          onClick={() => router.push("/patient/appointments")}
+                        >
+                          View all {appointments.length} appointments
+                        </Button>
+                      </div>
+                    )}
                   </div>
                 ) : (
                   <div className="text-center py-8">
                     <p className="text-gray-500">No appointments scheduled</p>
-                    <Button className="mt-4 bg-[#1A75BC] hover:bg-blue-700">Schedule Appointment</Button>
+                    <Button
+                      className="mt-4 bg-[#1A75BC] hover:bg-blue-700"
+                      onClick={() => router.push("/patient/appointments")}
+                    >
+                      Schedule Appointment
+                    </Button>
                   </div>
                 )}
               </Card>
@@ -790,6 +986,53 @@ export default function PatientDashboard() {
               </div>
             </div>
           </ScrollArea>
+        </DialogContent>
+      </Dialog>
+
+      {/* Appointment Details Modal */}
+      {selectedAppointment && (
+        <AppointmentDetailsModal
+          appointment={selectedAppointment}
+          isOpen={!!selectedAppointment}
+          onClose={() => setSelectedAppointment(null)}
+          onReschedule={() => handleReschedule(selectedAppointment._id)}
+          onCancel={() => handleCancelConfirmation(selectedAppointment)}
+          onJoinCall={() => handleJoinCall(selectedAppointment._id)}
+        />
+      )}
+
+      {/* Cancel Confirmation Dialog */}
+      <Dialog open={isCancelDialogOpen} onOpenChange={setIsCancelDialogOpen}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>Cancel Appointment</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to cancel this appointment? This action cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="py-4">
+            {appointmentToCancel && (
+              <div className="space-y-2">
+                <p>
+                  <strong>Doctor:</strong> {appointmentToCancel.doctorName}
+                </p>
+                <p>
+                  <strong>Date:</strong> {format(new Date(appointmentToCancel.date), "MMMM d, yyyy")}
+                </p>
+                <p>
+                  <strong>Time:</strong> {appointmentToCancel.time}
+                </p>
+              </div>
+            )}
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsCancelDialogOpen(false)}>
+              Don't Cancel
+            </Button>
+            <Button variant="destructive" onClick={handleCancelAppointment}>
+              Cancel Appointment
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>

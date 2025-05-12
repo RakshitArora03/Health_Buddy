@@ -110,7 +110,7 @@ export default function PatientsPage() {
   }
 
   if (!session) {
-    router.push("/login?role=doctor")
+    router.push("/")
     return null
   }
 

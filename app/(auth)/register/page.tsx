@@ -1,5 +1,7 @@
 "use client"
 
+import type React from "react"
+
 import { useState } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import Link from "next/link"
@@ -132,16 +134,21 @@ export default function RegisterPage() {
         <Button
           variant="outline"
           className="w-full"
-          onClick={() =>
+          onClick={() => {
+            const state = encodeURIComponent(JSON.stringify({ userType }))
             signIn("google", {
               callbackUrl: userType === "doctor" ? "/doctor/dashboard" : "/patient/dashboard",
-              userType: userType,
+              state,
             })
-          }
+          }}
           disabled={isLoading}
         >
           <FaGoogle className="mr-2" />
           Sign up with Google
+        </Button>
+
+        <Button className="w-full mt-2" onClick={() => router.push("/")} disabled={isLoading}>
+          Change User Type
         </Button>
 
         <p className="mt-4 text-center text-sm text-muted-foreground">
