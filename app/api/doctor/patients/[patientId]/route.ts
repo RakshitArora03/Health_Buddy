@@ -2,7 +2,7 @@ import { type NextRequest, NextResponse } from "next/server";
 import { connectToDatabase } from "@/lib/mongodb";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "../../../auth/[...nextauth]/route";
-import { ObjectId } from "mongodb";
+
 
 export async function DELETE(request: NextRequest, props: { params: Promise<{ patientId: string }> }) {
   const params = await props.params;

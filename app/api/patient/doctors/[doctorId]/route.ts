@@ -4,13 +4,14 @@ import { authOptions } from "../../../auth/[...nextauth]/route"
 import { connectToDatabase } from "@/lib/mongodb"
 import { ObjectId } from "mongodb"
 
-export async function GET(request: Request, { params }: { params: { doctorId: string } }) {
+export async function GET(request: Request, props: { params: Promise<{ doctorId: string }> }) {
+  const params = await props.params;
   try {
     const session = await getServerSession(authOptions)
     if (!session?.user?.email) {
       return NextResponse.json({ error: "Not authenticated" }, { status: 401 })
     }
-
+    
     const { db } = await connectToDatabase()
 
     const doctor = await db.collection("doctors").findOne({
