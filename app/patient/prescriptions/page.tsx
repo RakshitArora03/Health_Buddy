@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { EPrescriptions } from "@/components/patient/EPrescriptions"
+import { EPrescriptions } from "@/components/patient/Eprescriptions"
 import { AnalyzedPrescriptions } from "@/components/patient/AnalyzedPrescriptions"
 
 export default function PrescriptionsPage() {
